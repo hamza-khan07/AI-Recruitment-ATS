@@ -1,0 +1,35 @@
+import express from "express";
+import helmet from "helmet";
+import compression from "compression";
+import cors from "cors";
+import morgan from "morgan";
+import authRouter from "./routes/auth.routes.js";
+import companyRouter from "./routes/company.routes.js";
+import adminRouter from "./routes/admin.routes.js";
+import { env } from "./config/env.js";
+import { errorMiddleware } from "./middlewares/error.middleware.js";
+
+const app = express();
+
+app.use(helmet());
+app.use(compression());
+app.use(cors({ origin: true, credentials: true }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
+app.use(morgan("combined"));
+
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
+app.use(`${env.apiPrefix}/auth`, authRouter);
+app.use(`${env.apiPrefix}/companies`, companyRouter);
+app.use(`${env.apiPrefix}/admin`, adminRouter);
+
+app.use((req, res) => {
+  res.status(404).json({ success: false, message: "Route not found." });
+});
+
+app.use(errorMiddleware);
+
+export default app;
