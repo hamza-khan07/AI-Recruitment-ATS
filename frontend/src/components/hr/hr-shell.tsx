@@ -64,7 +64,7 @@ const pageTitles: Record<string, string> = {
 
 function buildBreadcrumbs(pathname: string) {
   const segments = pathname.split("/").filter(Boolean);
-  const crumbs = [{ label: "HR Management", href: "/hr-management" }];
+  const crumbs: Array<{ label: string; href: string }> = [];
 
   if (segments.length > 2) {
     const pageKey = segments[2];
