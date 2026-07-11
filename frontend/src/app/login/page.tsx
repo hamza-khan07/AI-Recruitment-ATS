@@ -29,7 +29,6 @@ export default function LoginPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        // show server error details to help debugging
         const errMsg = result?.message ? `${result.message}` : JSON.stringify(result);
         setMessage(errMsg || "Login failed.");
         console.error("Login error response:", result);
@@ -37,21 +36,23 @@ export default function LoginPage() {
       }
 
       const accessToken = result.data?.accessToken;
-      const role = result.data?.role as string | undefined;
+      const role = (result.data?.role as string | undefined)?.toUpperCase();
 
       if (accessToken) {
         saveAuthToken(accessToken);
         saveUserRole(role || "CANDIDATE");
 
-        // redirect based on role; super admin goes to admin dashboard,
-        // others go to the app root so user sees a landing/dashboard.
         if (role === "SUPER_ADMIN") {
-          window.location.href = "/super-admin";
+          router.replace("/super-admin");
           return;
         }
 
-        console.info("Login succeeded for role:", role);
-        window.location.href = "/";
+        if (role === "HR") {
+          router.replace("/hr-management");
+          return;
+        }
+
+        router.replace("/");
         return;
       }
 
