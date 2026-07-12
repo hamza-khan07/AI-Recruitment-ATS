@@ -16,7 +16,42 @@ model User {
   isActive      Boolean        @default(true)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
+  companyId     String?
+  company       Company?       @relation(fields: [companyId], references: [id])
+  ownedCompanies Company[]      @relation("CompanyOwner")
   refreshTokens RefreshToken[]
+}
+
+model Company {
+  id            String            @id @default(uuid())
+  name          String
+  slug          String            @unique
+  ownerId       String
+  owner         User              @relation("CompanyOwner", fields: [ownerId], references: [id])
+  users         User[]
+  careerPageUrl String?
+  websiteUrl    String?
+  logo          String?
+  description   String?
+  email         String?
+  phone         String?
+  address       String?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  settings      CompanySettings?
+}
+
+model CompanySettings {
+  id             String   @id @default(uuid())
+  companyId      String   @unique
+  company        Company  @relation(fields: [companyId], references: [id])
+  locale         String?
+  timezone       String?
+  billingEmail   String?
+  timezoneOffset Int?
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model RefreshToken {

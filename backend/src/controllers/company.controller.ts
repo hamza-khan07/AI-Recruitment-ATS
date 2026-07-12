@@ -3,6 +3,7 @@ import { companyService } from "../services/company.service.js";
 import {
   assignHrSchema,
   companyIdParamSchema,
+  companyProfileSchema,
   companySettingsSchema,
   createCompanySchema,
   updateCompanySchema,
@@ -18,7 +19,15 @@ export const companyController = {
         return res.status(401).json({ success: false, message: "Authentication required." });
       }
 
-      const company = await companyService.createCompany({ ...data, ownerId: currentUserId }, (req as any).user.role);
+      const company = await companyService.createCompany({
+        name: data.name,
+        slug: data.slug,
+        ownerId: currentUserId,
+        careerPageUrl: data.careerPageUrl,
+        logoUrl: data.logoUrl,
+        websiteUrl: data.websiteUrl,
+        description: data.description,
+      } as any, (req as any).user.role);
 
       return res.status(201).json({ success: true, data: company });
     } catch (error) {
@@ -43,6 +52,47 @@ export const companyController = {
     }
   },
 
+  async getCompanyProfile(req: Request, res: Response, next: NextFunction) {
+    try {
+      const currentUserId = (req as any).user?.id;
+
+      if (!currentUserId) {
+        return res.status(401).json({ success: false, message: "Authentication required." });
+      }
+
+      const company = await companyService.getCompanyProfile(currentUserId, (req as any).user.role);
+
+      return res.status(200).json({ success: true, data: company });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async upsertCompanyProfile(req: Request, res: Response, next: NextFunction) {
+    try {
+      const data = companyProfileSchema.parse(req.body);
+      const currentUserId = (req as any).user?.id;
+
+      if (!currentUserId) {
+        return res.status(401).json({ success: false, message: "Authentication required." });
+      }
+
+      const company = await companyService.upsertCompanyProfile({
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        websiteUrl: data.websiteUrl ?? data.website,
+        description: data.description,
+        address: data.address,
+        logo: data.logo,
+      } as any, currentUserId, (req as any).user.role);
+
+      return res.status(200).json({ success: true, data: company });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async updateCompany(req: Request, res: Response, next: NextFunction) {
     try {
       const { companyId } = companyIdParamSchema.parse(req.params);
@@ -53,7 +103,14 @@ export const companyController = {
         return res.status(401).json({ success: false, message: "Authentication required." });
       }
 
-      const updated = await companyService.updateCompany(companyId, data, currentUserId, (req as any).user.role);
+      const updated = await companyService.updateCompany(companyId, {
+        name: data.name,
+        slug: data.slug,
+        careerPageUrl: data.careerPageUrl,
+        logoUrl: data.logoUrl,
+        websiteUrl: data.websiteUrl,
+        description: data.description,
+      } as any, currentUserId, (req as any).user.role);
 
       return res.status(200).json({ success: true, data: updated });
     } catch (error) {
@@ -105,7 +162,13 @@ export const companyController = {
         return res.status(401).json({ success: false, message: "Authentication required." });
       }
 
-      const settings = await companyService.updateCompanySettings(companyId, data, currentUserId, (req as any).user.role);
+      const settings = await companyService.updateCompanySettings(companyId, {
+        locale: data.locale,
+        timezone: data.timezone,
+        billingEmail: data.billingEmail,
+        timezoneOffset: data.timezoneOffset,
+        metadata: data.metadata,
+      } as any, currentUserId, (req as any).user.role);
 
       return res.status(200).json({ success: true, data: settings });
     } catch (error) {

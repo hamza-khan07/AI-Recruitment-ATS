@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { getAuthToken } from "@/lib/authClient";
+import { api } from "@/lib/api";
 
 type Company = {
   name?: string;
@@ -24,23 +26,84 @@ export default function CompanyProfile() {
   const [editing, setEditing] = useState(true);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [fileName, setFileName] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setCompany(JSON.parse(raw));
-    } catch (e) {
-      // ignore
-    }
-  }, []);
+    const loadProfile = async () => {
+      const token = getAuthToken();
+      if (!token) {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw) as Company;
+            setCompany(parsed);
+            if (parsed.name || parsed.email) setEditing(false);
+          }
+        } catch {
+          // ignore
+        }
+        return;
+      }
 
-  useEffect(() => {
-    // if company already saved, show read-only view
-    if (company && (company.name || company.email)) {
-      setEditing(false);
-    }
-  }, [company]);
+      try {
+        setIsLoading(true);
+        const response = await api.get("/api/v1/companies/profile", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const body = response.data?.data ?? response.data;
+        if (body && (body.name || body.email)) {
+          setCompany({
+            name: body.name,
+            email: body.email,
+            phone: body.phone,
+            website: body.websiteUrl ?? body.website,
+            description: body.description,
+            address: body.address,
+            logo: body.logo ?? body.logoUrl,
+          });
+          setEditing(false);
+          localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            name: body.name,
+            email: body.email,
+            phone: body.phone,
+            website: body.websiteUrl ?? body.website,
+            description: body.description,
+            address: body.address,
+            logo: body.logo ?? body.logoUrl,
+          }));
+        } else {
+          try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+              const parsed = JSON.parse(raw) as Company;
+              setCompany(parsed);
+              if (parsed.name || parsed.email) setEditing(false);
+            }
+          } catch {
+            // ignore
+          }
+        }
+      } catch {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw) as Company;
+            setCompany(parsed);
+            if (parsed.name || parsed.email) setEditing(false);
+          }
+        } catch {
+          // ignore
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProfile();
+  }, []);
 
   const handleChange = (field: keyof Company, value: string) => {
     setCompany((c) => ({ ...c, [field]: value }));
@@ -66,13 +129,63 @@ export default function CompanyProfile() {
     return Object.keys(e).length === 0;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validate()) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(company));
-    setEditing(false);
+
+    const token = getAuthToken();
+    const payload = {
+      name: company.name?.trim(),
+      email: company.email?.trim(),
+      phone: company.phone?.trim(),
+      website: company.website?.trim(),
+      description: company.description?.trim(),
+      address: company.address?.trim(),
+      logo: company.logo,
+    };
+
+    try {
+      setIsLoading(true);
+      setStatusMessage(null);
+
+      if (token) {
+        const response = await api.post("/api/v1/companies/profile", payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const body = response.data?.data ?? response.data;
+        if (body) {
+          setCompany({
+            name: body.name,
+            email: body.email,
+            phone: body.phone,
+            website: body.websiteUrl ?? body.website,
+            description: body.description,
+            address: body.address,
+            logo: body.logo ?? body.logoUrl,
+          });
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+          setEditing(false);
+          setStatusMessage("Company information saved successfully.");
+          return;
+        }
+      }
+
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      setEditing(false);
+      setStatusMessage("Company information saved locally.");
+    } catch {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+      setStatusMessage("Saved locally because the server was unavailable.");
+      setEditing(false);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleEdit = () => setEditing(true);
+  const handleEdit = () => {
+    setEditing(true);
+    setStatusMessage(null);
+  };
 
   if (!editing && company && (company.name || company.email)) {
     return (
@@ -174,10 +287,12 @@ export default function CompanyProfile() {
         <textarea className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm" value={company.address ?? ""} onChange={(e) => handleChange("address", e.target.value)} />
       </div>
 
-      <div className="flex items-center gap-3">
-        <Button type="submit">Save</Button>
-        <Button variant="ghost" onClick={() => { localStorage.removeItem(STORAGE_KEY); setCompany({}); }}>Clear</Button>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="submit" disabled={isLoading}>{isLoading ? "Saving..." : "Save"}</Button>
+        <Button variant="ghost" onClick={() => { localStorage.removeItem(STORAGE_KEY); setCompany({}); setFileName(""); setStatusMessage(null); }}>Clear</Button>
       </div>
+
+      {statusMessage ? <p className="text-sm text-slate-600">{statusMessage}</p> : null}
     </form>
   );
 }

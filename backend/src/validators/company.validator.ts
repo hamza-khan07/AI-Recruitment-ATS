@@ -23,11 +23,22 @@ export const companySettingsSchema = z.object({
   timezone: z.string().optional(),
   billingEmail: z.string().email().optional(),
   timezoneOffset: z.number().optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const companyIdParamSchema = z.object({
   companyId: z.string().uuid({ message: "Company ID must be a valid UUID." }),
+});
+
+export const companyProfileSchema = z.object({
+  name: z.string().min(2, { message: "Company name is required." }).optional(),
+  email: z.string().email().optional().or(z.literal("")),
+  phone: z.string().optional(),
+  website: z.string().optional(),
+  websiteUrl: z.string().optional(),
+  description: z.string().optional(),
+  address: z.string().optional(),
+  logo: z.string().optional(),
 });
 
 export const assignHrSchema = z.object({
@@ -38,4 +49,5 @@ export type CreateCompanyInput = z.infer<typeof createCompanySchema>;
 export type UpdateCompanyInput = z.infer<typeof updateCompanySchema>;
 export type CompanySettingsInput = z.infer<typeof companySettingsSchema>;
 export type CompanyIdParam = z.infer<typeof companyIdParamSchema>;
+export type CompanyProfileInput = z.infer<typeof companyProfileSchema>;
 export type AssignHrInput = z.infer<typeof assignHrSchema>;

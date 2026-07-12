@@ -176,37 +176,6 @@ export function Sidebar({
   );
 }
 
-export function SidebarMenu({ children }: { children: ReactNode }) {
-  return <div className="space-y-1">{children}</div>;
-}
-
-export function SidebarItem({
-  active,
-  icon: Icon,
-  label,
-  href,
-}: {
-  active?: boolean;
-  icon: LucideIcon;
-  label: string;
-  href: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className={cn(
-        "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm font-medium transition-all duration-200 hover:bg-zinc-100 hover:text-zinc-950 dark:hover:bg-zinc-800 dark:hover:text-white",
-        active
-          ? "bg-zinc-950 text-white dark:bg-white dark:text-zinc-950"
-          : "text-zinc-600 dark:text-zinc-400"
-      )}
-    >
-      <Icon className="h-4 w-4 shrink-0" />
-      <span>{label}</span>
-    </Link>
-  );
-}
-
 export function HrBreadcrumb({ items }: { items: Array<{ label: string; href: string }> }) {
   return (
     <nav className="flex items-center gap-2 text-sm text-zinc-500 dark:text-zinc-400">

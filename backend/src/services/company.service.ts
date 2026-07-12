@@ -1,6 +1,13 @@
 import { authRepository } from "../repositories/auth.repository.js";
 import { companyRepository, type CompanySettingsParams, type CreateCompanyParams, type UpdateCompanyParams } from "../repositories/company.repository.js";
 
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "") || "company";
+
 const ensureAccess = async (companyId: string, currentUserId: string, currentUserRole: string, allowHrAccess = false) => {
   const company = await companyRepository.findCompanyById(companyId);
 
@@ -18,7 +25,7 @@ const ensureAccess = async (companyId: string, currentUserId: string, currentUse
 
   if (allowHrAccess) {
     const user = await authRepository.findUserById(currentUserId);
-    if (user?.companyId === companyId && user.role === "HR") {
+    if (user && (user as any)?.companyId === companyId && user.role === "HR") {
       return company;
     }
   }
@@ -39,6 +46,57 @@ export const companyService = {
     }
 
     const company = await companyRepository.createCompany(data);
+    await companyRepository.upsertCompanySettings(company.id, {});
+    return company;
+  },
+
+  async getCompanyProfile(currentUserId: string, currentUserRole: string) {
+    const user = await authRepository.findUserById(currentUserId);
+
+    if (!user) {
+      throw new Error("User not found.");
+    }
+
+    const companyId = (user as any).companyId;
+
+    if (!companyId) {
+      return null;
+    }
+
+    return companyRepository.findCompanyById(companyId);
+  },
+
+  async upsertCompanyProfile(data: Partial<UpdateCompanyParams> & { name?: string }, currentUserId: string, currentUserRole: string) {
+    if (currentUserRole !== "HR" && currentUserRole !== "SUPER_ADMIN") {
+      throw new Error("Only HR or SUPER_ADMIN can manage company profile.");
+    }
+
+    const user = await authRepository.findUserById(currentUserId);
+
+    if (!user) {
+      throw new Error("User not found.");
+    }
+
+    const companyData = {
+      name: data.name ?? user.name ?? "Company",
+      slug: slugify(data.name ?? user.name ?? "Company"),
+      ownerId: currentUserId,
+      websiteUrl: (data as any).websiteUrl ?? (data as any).website,
+      description: data.description,
+      email: data.email,
+      phone: data.phone,
+      address: data.address,
+      logo: data.logo,
+    } as CreateCompanyParams;
+
+    const companyId = (user as any).companyId;
+
+    if (companyId) {
+      return companyRepository.updateCompany(companyId, companyData);
+    }
+
+    const company = await companyRepository.createCompany(companyData);
+    await companyRepository.assignHrToCompany(currentUserId, company.id);
     await companyRepository.upsertCompanySettings(company.id, {});
     return company;
   },

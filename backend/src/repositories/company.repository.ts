@@ -6,8 +6,12 @@ export interface CreateCompanyParams {
   ownerId: string;
   careerPageUrl?: string;
   logoUrl?: string;
+  logo?: string;
   websiteUrl?: string;
   description?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
 }
 
 export interface UpdateCompanyParams {
@@ -15,8 +19,12 @@ export interface UpdateCompanyParams {
   slug?: string;
   careerPageUrl?: string;
   logoUrl?: string;
+  logo?: string;
   websiteUrl?: string;
   description?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
 }
 
 export interface CompanySettingsParams {
@@ -27,23 +35,28 @@ export interface CompanySettingsParams {
   metadata?: Record<string, unknown>;
 }
 
+const anyPrisma = prisma as any;
+
 export const companyRepository = {
   async createCompany(data: CreateCompanyParams) {
-    return prisma.company.create({
+    return anyPrisma.company.create({
       data: {
         name: data.name,
         slug: data.slug,
         ownerId: data.ownerId,
         careerPageUrl: data.careerPageUrl,
-        logoUrl: data.logoUrl,
+        logo: data.logo ?? data.logoUrl,
         websiteUrl: data.websiteUrl,
         description: data.description,
+        email: data.email,
+        phone: data.phone,
+        address: data.address,
       },
     });
   },
 
   async findCompanyById(id: string) {
-    return prisma.company.findUnique({
+    return anyPrisma.company.findUnique({
       where: { id },
       include: {
         settings: true,
@@ -52,7 +65,7 @@ export const companyRepository = {
   },
 
   async findCompanyBySlug(slug: string) {
-    return prisma.company.findUnique({
+    return anyPrisma.company.findUnique({
       where: { slug },
       include: {
         settings: true,
@@ -61,7 +74,7 @@ export const companyRepository = {
   },
 
   async findCompanyByOwnerId(ownerId: string) {
-    return prisma.company.findFirst({
+    return anyPrisma.company.findFirst({
       where: { ownerId },
       include: {
         settings: true,
@@ -70,33 +83,36 @@ export const companyRepository = {
   },
 
   async updateCompany(id: string, data: UpdateCompanyParams) {
-    return prisma.company.update({
+    return anyPrisma.company.update({
       where: { id },
       data: {
         name: data.name,
         slug: data.slug,
         careerPageUrl: data.careerPageUrl,
-        logoUrl: data.logoUrl,
+        logo: data.logo ?? data.logoUrl,
         websiteUrl: data.websiteUrl,
         description: data.description,
+        email: data.email,
+        phone: data.phone,
+        address: data.address,
       },
     });
   },
 
   async deleteCompany(id: string) {
-    return prisma.company.delete({
+    return anyPrisma.company.delete({
       where: { id },
     });
   },
 
   async findCompanySettings(companyId: string) {
-    return prisma.companySettings.findUnique({
+    return anyPrisma.companySettings.findUnique({
       where: { companyId },
     });
   },
 
   async upsertCompanySettings(companyId: string, data: CompanySettingsParams) {
-    return prisma.companySettings.upsert({
+    return anyPrisma.companySettings.upsert({
       where: { companyId },
       create: {
         companyId,
@@ -117,7 +133,7 @@ export const companyRepository = {
   },
 
   async assignHrToCompany(userId: string, companyId: string) {
-    return prisma.user.update({
+    return anyPrisma.user.update({
       where: { id: userId },
       data: { companyId },
     });
