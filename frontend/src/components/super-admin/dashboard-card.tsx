@@ -1,5 +1,5 @@
 import type { HTMLAttributes } from "react";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { Card, CardFooter } from "@/components/ui/card";
 
 interface DashboardCardProps extends HTMLAttributes<HTMLDivElement> {
   title: string;

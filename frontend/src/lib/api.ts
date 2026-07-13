@@ -1,4 +1,4 @@
-import axios, { type AxiosRequestHeaders } from "axios";
+import axios from "axios";
 import { getAuthToken } from "./authClient";
 
 const baseURL = process.env.NEXT_PUBLIC_API_BASE_URL || "";
