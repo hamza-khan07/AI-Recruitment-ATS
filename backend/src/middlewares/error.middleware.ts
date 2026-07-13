@@ -9,6 +9,8 @@ export const errorMiddleware = (
   const status = err instanceof Error ? 400 : 500;
   const message = err instanceof Error ? err.message : "Internal server error.";
 
+  console.error("[Backend Error]", err);
+
   res.status(status).json({
     success: false,
     message,

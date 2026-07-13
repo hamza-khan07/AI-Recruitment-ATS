@@ -10,6 +10,7 @@ export const registerSchema = z.object({
   password: z.string().min(8, { message: "Password must be at least 8 characters." }),
   name: z.string().optional(),
   role: z.enum(["SUPER_ADMIN", "HR", "CANDIDATE"]),
+  companyName: z.string().min(2, { message: "Company name must be at least 2 characters." }).optional(),
 });
 
 export const refreshTokenSchema = z.object({

@@ -8,6 +8,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("CANDIDATE");
+  const [companyName, setCompanyName] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -16,13 +17,22 @@ export default function RegisterPage() {
     setIsLoading(true);
     setMessage(null);
 
+    if (role === "HR" && !companyName.trim()) {
+      setMessage("Company name is required for HR accounts.");
+      setIsLoading(false);
+      return;
+    }
+
     try {
+      const body: Record<string, string> = { name, email, password, role };
+      if (role === "HR") body.companyName = companyName.trim();
+
       const response = await fetch("/api/v1/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name, email, password, role }),
+        body: JSON.stringify(body),
       });
 
       const result = await response.json();
@@ -104,7 +114,29 @@ export default function RegisterPage() {
             </select>
           </div>
 
-          {message ? <p className="text-sm text-red-600 dark:text-red-400">{message}</p> : null}
+          {role === "HR" && (
+            <div>
+              <label className="mb-2 block text-sm font-medium text-zinc-700 dark:text-zinc-300" htmlFor="companyName">
+                Company Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="companyName"
+                type="text"
+                value={companyName}
+                onChange={(event) => setCompanyName(event.target.value)}
+                placeholder="e.g. Acme Corp"
+                required
+                className="w-full rounded-2xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50"
+              />
+              <p className="mt-1 text-xs text-zinc-500">A company profile will be automatically created for you.</p>
+            </div>
+          )}
+
+          {message ? (
+            <p className={`text-sm ${message.includes("successful") ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+              {message}
+            </p>
+          ) : null}
 
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? "Creating account..." : "Register"}

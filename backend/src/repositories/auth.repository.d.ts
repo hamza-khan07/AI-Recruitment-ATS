@@ -20,6 +20,7 @@ export declare const authRepository: {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        companyId: string | null;
     } | null>;
     findUserById(id: string): Promise<{
         id: string;
@@ -30,6 +31,7 @@ export declare const authRepository: {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        companyId: string | null;
     } | null>;
     createUser(data: CreateUserParams): Promise<{
         id: string;
@@ -40,6 +42,7 @@ export declare const authRepository: {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        companyId: string | null;
     }>;
     saveRefreshToken({ token, userId, expiresAt }: RefreshTokenRecord): Promise<{
         token: string;

@@ -17,7 +17,7 @@ export const authController = {
   async register(req: Request, res: Response, next: NextFunction) {
     try {
       const data = registerSchema.parse(req.body);
-      const user = await authService.register(data.email, data.password, data.name, data.role as any);
+      const user = await authService.register(data.email, data.password, data.name, data.role as any, data.companyName);
 
       return res.status(201).json({ success: true, data: { id: user.id, email: user.email, role: user.role } });
     } catch (error) {

@@ -1,0 +1,42 @@
+import { z } from "zod";
+export const createJobSchema = z.object({
+    companyId: z.string().uuid({ message: "Company ID must be a valid UUID." }).optional(),
+    title: z.string().min(2, { message: "Job title is required." }),
+    department: z.string().optional(),
+    employmentType: z.string().optional(),
+    workMode: z.string().optional(),
+    location: z.string().optional(),
+    salaryMin: z.number().int().nonnegative().optional(),
+    salaryMax: z.number().int().nonnegative().optional(),
+    experience: z.string().optional(),
+    openPositions: z.number().int().min(1).optional(),
+    description: z.string().optional(),
+    responsibilities: z.string().optional(),
+    requirements: z.string().optional(),
+    qualifications: z.string().optional(),
+    skills: z.string().optional(),
+    benefits: z.string().optional(),
+    deadline: z.string().optional(),
+    status: z.string().optional(),
+});
+export const updateJobSchema = z.object({
+    title: z.string().min(2).optional(),
+    department: z.string().optional(),
+    employmentType: z.string().optional(),
+    workMode: z.string().optional(),
+    location: z.string().optional(),
+    salaryMin: z.number().int().nonnegative().optional().or(z.null()),
+    salaryMax: z.number().int().nonnegative().optional().or(z.null()),
+    experience: z.string().optional().or(z.null()),
+    openPositions: z.number().int().min(1).optional().or(z.null()),
+    description: z.string().optional().or(z.null()),
+    responsibilities: z.string().optional().or(z.null()),
+    requirements: z.string().optional().or(z.null()),
+    qualifications: z.string().optional().or(z.null()),
+    skills: z.string().optional().or(z.null()),
+    benefits: z.string().optional().or(z.null()),
+    deadline: z.string().optional().or(z.null()),
+    status: z.string().optional(),
+});
+export const jobIdParamSchema = z.object({ jobId: z.string().uuid({ message: "Job ID must be a valid UUID." }) });
+//# sourceMappingURL=job.validator.js.map

@@ -1,7 +1,9 @@
 import bcrypt from "bcrypt";
 import { authRepository, type AppRole, type CreateUserParams } from "../repositories/auth.repository.js";
+import { companyRepository } from "../repositories/company.repository.js";
 import { jwtUtils } from "../utils/jwt.js";
 import { env } from "../config/env.js";
+import prisma from "../config/prisma.js";
 
 export interface AuthTokens {
   accessToken: string;
@@ -69,7 +71,7 @@ export const authService = {
     return { accessToken, refreshToken: newRefreshToken };
   },
 
-  async register(email: string, password: string, name: string | undefined, role: AppRole) {
+  async register(email: string, password: string, name: string | undefined, role: AppRole, companyName?: string) {
     const existingUser = await authRepository.findUserByEmail(email);
 
     if (existingUser) {
@@ -78,6 +80,53 @@ export const authService = {
 
     const passwordHash = await bcrypt.hash(password, env.bcryptSaltRounds);
 
+    if (role === "HR") {
+      if (!companyName) {
+        throw new Error("Company name is required when registering as HR.");
+      }
+
+      // Generate a URL-safe slug from the company name
+      const baseSlug = companyName
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      const slug = `${baseSlug}-${Date.now()}`;
+
+      // Use a transaction to ensure atomicity
+      const user = await (prisma as any).$transaction(async (tx: any) => {
+        // 1. Create the user first (no companyId yet)
+        const newUser = await tx.user.create({
+          data: {
+            email,
+            passwordHash,
+            name,
+            role,
+          },
+        });
+
+        // 2. Create the company with the HR user as owner
+        const company = await tx.company.create({
+          data: {
+            name: companyName,
+            slug,
+            ownerId: newUser.id,
+          },
+        });
+
+        // 3. Link the companyId back to the HR user
+        const updatedUser = await tx.user.update({
+          where: { id: newUser.id },
+          data: { companyId: company.id },
+        });
+
+        return updatedUser;
+      });
+
+      return user;
+    }
+
+    // For non-HR roles, create user normally
     const user = await authRepository.createUser({
       email,
       passwordHash,

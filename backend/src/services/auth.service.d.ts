@@ -23,6 +23,7 @@ export declare const authService: {
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
+        companyId: string | null;
     }>;
     forgotPassword(email: string): Promise<{
         userId: string;
