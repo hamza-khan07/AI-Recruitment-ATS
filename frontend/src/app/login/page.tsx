@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { saveAuthToken, saveUserRole } from "@/lib/authClient";
+import { saveAuthToken, saveRefreshToken, saveUserRole } from "@/lib/authClient";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -36,10 +36,12 @@ export default function LoginPage() {
       }
 
       const accessToken = result.data?.accessToken;
+      const refreshToken = result.data?.refreshToken;
       const role = (result.data?.role as string | undefined)?.toUpperCase();
 
       if (accessToken) {
         saveAuthToken(accessToken);
+        if (refreshToken) saveRefreshToken(refreshToken);
         saveUserRole(role || "CANDIDATE");
 
         if (role === "SUPER_ADMIN") {
@@ -52,7 +54,7 @@ export default function LoginPage() {
           return;
         }
 
-        router.replace("/");
+        router.replace("/candidate/dashboard");
         return;
       }
 
