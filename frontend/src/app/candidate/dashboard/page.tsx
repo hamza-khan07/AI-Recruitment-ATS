@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   Briefcase,
@@ -14,10 +14,10 @@ import {
 import { SearchBar } from "@/components/candidate/search-bar";
 import { JobCard } from "@/components/candidate/job-card";
 import {
-  MOCK_JOBS,
-  MOCK_COMPANIES,
   INITIAL_SAVED_JOB_IDS,
 } from "@/lib/candidate-mock-data";
+import { api } from "@/lib/api";
+import type { Job } from "@/types/candidate";
 
 // Quick filter chips for the dashboard
 const QUICK_FILTERS = [
@@ -49,13 +49,49 @@ export default function CandidateDashboardPage() {
     });
   };
 
+  const [liveJobs, setLiveJobs] = useState<Job[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    api.get("/api/v1/jobs/published")
+      .then(res => {
+        const backendJobs = res.data?.data?.jobs || [];
+        const transformed = backendJobs.map((j: any) => ({
+          id: j.id,
+          title: j.title,
+          company: j.company,
+          location: j.location || j.company?.address || "Remote",
+          type: j.workMode === "Remote" ? "REMOTE" : (j.employmentType === "Full-time" ? "FULL_TIME" : "HYBRID"),
+          workMode: j.workMode || "",
+          employmentType: j.employmentType || "",
+          experienceLevel: j.experience?.toUpperCase().includes("SENIOR") ? "SENIOR" : j.experience?.toUpperCase().includes("MID") ? "MID" : "ENTRY",
+          salaryMin: j.salaryMin || 0,
+          salaryMax: j.salaryMax || 0,
+          salaryCurrency: "PKR",
+          description: j.description || "",
+          responsibilities: j.responsibilities ? j.responsibilities.split("\n") : [],
+          requirements: j.requirements ? j.requirements.split("\n") : [],
+          benefits: j.benefits ? j.benefits.split("\n") : [],
+          skills: j.skills ? j.skills.split(",") : [],
+          status: "PUBLISHED",
+          openings: j.openPositions || 1,
+          postedAt: j.createdAt,
+          deadline: j.deadline || "",
+          featured: false
+        }));
+        setLiveJobs(transformed);
+      })
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  }, []);
+
   // Featured jobs (hero section)
-  const featuredJobs = MOCK_JOBS.filter((j) => j.featured);
+  const featuredJobs = liveJobs.slice(0, 2);
 
   // Recent jobs: apply quick filter
-  const recentJobs = MOCK_JOBS.filter((j) => {
+  const recentJobs = liveJobs.filter((j) => {
     if (!activeFilter) return true;
-    if (activeFilter === "trending") return j.featured;
+    if (activeFilter === "trending") return true;
     return j.type === activeFilter;
   }).slice(0, 6);
 
@@ -148,7 +184,9 @@ export default function CandidateDashboardPage() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
-          {featuredJobs.map((job) => (
+          {isLoading ? (
+            <div className="col-span-2 text-center text-zinc-500 py-10">Loading jobs...</div>
+          ) : featuredJobs.map((job) => (
             <JobCard
               key={job.id}
               job={job}
@@ -179,7 +217,9 @@ export default function CandidateDashboardPage() {
           </Link>
         </div>
 
-        {recentJobs.length > 0 ? (
+        {isLoading ? (
+          <div className="text-center text-zinc-500 py-10">Loading jobs...</div>
+        ) : recentJobs.length > 0 ? (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {recentJobs.map((job) => (
               <JobCard
@@ -216,22 +256,26 @@ export default function CandidateDashboardPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-          {MOCK_COMPANIES.map((company) => (
+          {Array.from(new Map(liveJobs.filter(j => j.company).map(j => [j.company.id, j.company])).values()).slice(0, 6).map((company) => (
             <Link
               key={company.id}
               href={`/candidate/jobs?company=${encodeURIComponent(company.name)}`}
               className="group flex flex-col items-center gap-2 rounded-2xl border border-zinc-100 p-4 text-center transition hover:border-blue-200 hover:bg-blue-50/40 hover:shadow-sm"
             >
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 text-sm font-bold text-blue-700 ring-1 ring-blue-100 transition group-hover:ring-blue-300">
-                {company.logo}
+              <div className="flex h-12 w-12 overflow-hidden items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 text-sm font-bold text-blue-700 ring-1 ring-blue-100 transition group-hover:ring-blue-300">
+                {company.logo && company.logo.length > 5 ? (
+                  <img src={company.logo} alt={company.name} className="h-full w-full object-cover" />
+                ) : (
+                  <Building2 className="h-6 w-6 text-blue-500" />
+                )}
               </div>
               <div>
                 <p className="text-xs font-semibold text-zinc-800 line-clamp-1">{company.name}</p>
-                <p className="mt-0.5 text-[10px] text-zinc-400">{company.industry}</p>
+                <p className="mt-0.5 text-[10px] text-zinc-400">{company.size || "Tech"}</p>
               </div>
               <div className="flex items-center gap-1 text-[10px] text-zinc-400">
                 <MapPin className="h-2.5 w-2.5" />
-                {company.location.split(",")[0]}
+                {(company.location || company.address || "Remote").split(",")[0]}
               </div>
             </Link>
           ))}

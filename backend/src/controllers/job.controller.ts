@@ -20,6 +20,34 @@ export const jobController = {
     }
   },
 
+  async listPublishedJobs(req: Request, res: Response, next: NextFunction) {
+    try {
+      const page = parseInt((req.query.page as string) ?? "1", 10);
+      const perPage = parseInt((req.query.perPage as string) ?? "20", 10);
+      const filters = { 
+        search: req.query.search as string | undefined,
+        location: req.query.location as string | undefined,
+        type: req.query.type as string | undefined,
+        experience: req.query.experience as string | undefined,
+      };
+
+      const result = await jobService.listPublishedJobs(page, perPage, filters);
+      return res.status(200).json({ success: true, data: result });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getPublishedJob(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { jobId } = jobIdParamSchema.parse(req.params);
+      const job = await jobService.getPublishedJobById(jobId);
+      return res.status(200).json({ success: true, data: job });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async getJob(req: Request, res: Response, next: NextFunction) {
     try {
       const { jobId } = jobIdParamSchema.parse(req.params);

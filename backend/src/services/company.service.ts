@@ -87,6 +87,7 @@ export const companyService = {
       phone: data.phone,
       address: data.address,
       logo: data.logo,
+      size: (data as any).size,
     } as CreateCompanyParams;
 
     const companyId = (user as any).companyId;

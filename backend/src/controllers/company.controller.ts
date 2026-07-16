@@ -84,6 +84,7 @@ export const companyController = {
         websiteUrl: data.websiteUrl ?? data.website,
         description: data.description,
         address: data.address,
+        size: data.size,
         logo: data.logo,
       } as any, currentUserId, (req as any).user.role);
 
@@ -110,6 +111,7 @@ export const companyController = {
         logoUrl: data.logoUrl,
         websiteUrl: data.websiteUrl,
         description: data.description,
+        size: data.size,
       } as any, currentUserId, (req as any).user.role);
 
       return res.status(200).json({ success: true, data: updated });

@@ -16,6 +16,7 @@ export const updateCompanySchema = z.object({
   logoUrl: z.string().url().optional(),
   websiteUrl: z.string().url().optional(),
   description: z.string().max(1000).optional(),
+  size: z.string().optional(),
 });
 
 export const companySettingsSchema = z.object({
@@ -38,6 +39,7 @@ export const companyProfileSchema = z.object({
   websiteUrl: z.string().optional(),
   description: z.string().optional(),
   address: z.string().optional(),
+  size: z.string().optional(),
   logo: z.string().optional(),
 });
 

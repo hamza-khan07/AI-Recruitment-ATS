@@ -4,6 +4,9 @@ import React, { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { getAuthToken } from "@/lib/authClient";
 import { api } from "@/lib/api";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { MapPin, Mail, Phone, Globe, Building2, Pencil, CheckCircle2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type Company = {
   name?: string;
@@ -12,7 +15,8 @@ type Company = {
   website?: string;
   description?: string;
   address?: string;
-  logo?: string; // base64 or data URL
+  logo?: string;
+  size?: string;
 };
 
 const STORAGE_KEY = "hr_company_profile";
@@ -63,6 +67,7 @@ export default function CompanyProfile() {
             description: body.description,
             address: body.address,
             logo: body.logo ?? body.logoUrl,
+            size: body.size,
           });
           setEditing(false);
           localStorage.setItem(STORAGE_KEY, JSON.stringify({
@@ -73,6 +78,7 @@ export default function CompanyProfile() {
             description: body.description,
             address: body.address,
             logo: body.logo ?? body.logoUrl,
+            size: body.size,
           }));
         } else {
           try {
@@ -141,6 +147,7 @@ export default function CompanyProfile() {
       description: company.description?.trim(),
       address: company.address?.trim(),
       logo: company.logo,
+      size: company.size,
     };
 
     try {
@@ -162,6 +169,7 @@ export default function CompanyProfile() {
             description: body.description,
             address: body.address,
             logo: body.logo ?? body.logoUrl,
+            size: body.size,
           });
           localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
           setEditing(false);
@@ -189,54 +197,87 @@ export default function CompanyProfile() {
 
   if (!editing && company && (company.name || company.email)) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-start justify-between">
-          <div>
-            <h2 className="text-2xl font-semibold text-slate-900">{company.name}</h2>
-            {company.website ? (
-              <a
-                href={company.website.startsWith("http") ? company.website : `https://${company.website}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-1 inline-block text-sm text-sky-600 hover:underline"
-              >
-                {company.website}
-              </a>
-            ) : null}
-          </div>
+      <div className="space-y-6">
+        <Card className="overflow-hidden border-none shadow-sm">
+          <CardContent className="relative pt-8 pb-6 px-6 sm:px-10">
+            <div className="flex flex-col items-center justify-center gap-4 mb-8">
+              <div className="relative h-24 w-24 sm:h-32 sm:w-32 rounded-xl border-4 border-slate-100 bg-white shadow-md overflow-hidden flex-shrink-0">
+                {company.logo ? (
+                  <img src={company.logo} alt="Company Logo" className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center bg-slate-50 text-slate-400">
+                    <Building2 className="h-10 w-10 opacity-50" />
+                  </div>
+                )}
+              </div>
+              <div className="text-center">
+                <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">{company.name}</h2>
+                <div className="flex items-center justify-center gap-2 mt-1 text-slate-500">
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <span className="text-sm font-medium">Verified Company Profile</span>
+                </div>
+              </div>
+              <Button onClick={handleEdit} variant="outline" className="gap-2 mt-2">
+                <Pencil className="h-4 w-4" /> Edit Profile
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
+              <div className="md:col-span-2 space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-3">About Us</h3>
+                  <div className="text-slate-600 whitespace-pre-wrap leading-relaxed text-sm bg-slate-50 p-5 rounded-xl border border-slate-100">
+                    {company.description || "No description provided."}
+                  </div>
+                </div>
+              </div>
 
-          <div>
-            {company.logo ? (
-              <img src={company.logo} alt="logo" className="h-24 w-24 rounded-md object-cover" />
-            ) : (
-              <div className="h-24 w-24 rounded-md bg-slate-100 flex items-center justify-center text-slate-400">No Image</div>
-            )}
-          </div>
-        </div>
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900 mb-4">Contact Information</h3>
+                  <ul className="space-y-4">
+                    {company.email && (
+                      <li className="flex items-start gap-3 text-sm text-slate-600">
+                        <Mail className="h-5 w-5 text-slate-400 shrink-0" />
+                        <span className="break-all">{company.email}</span>
+                      </li>
+                    )}
+                    {company.phone && (
+                      <li className="flex items-start gap-3 text-sm text-slate-600">
+                        <Phone className="h-5 w-5 text-slate-400 shrink-0" />
+                        <span>{company.phone}</span>
+                      </li>
+                    )}
+                    {company.website && (
+                      <li className="flex items-start gap-3 text-sm text-slate-600">
+                        <Globe className="h-5 w-5 text-slate-400 shrink-0" />
+                        <a href={company.website.startsWith("http") ? company.website : `https://${company.website}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">
+                          {company.website.replace(/^https?:\/\//, '')}
+                        </a>
+                      </li>
+                    )}
+                    {company.address && (
+                      <li className="flex items-start gap-3 text-sm text-slate-600">
+                        <MapPin className="h-5 w-5 text-slate-400 shrink-0" />
+                        <span>{company.address}</span>
+                      </li>
+                    )}
+                  </ul>
+                </div>
 
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="space-y-1 md:col-span-2">
-            <p className="text-xs text-slate-500">Email</p>
-            <p className="text-sm text-slate-800">{company.email}</p>
-          </div>
-
-          <div className="space-y-1 md:col-span-2">
-            <p className="text-xs text-slate-500">Address</p>
-            <p className="text-sm text-slate-800 whitespace-pre-wrap">{company.address}</p>
-
-            <p className="mt-3 text-xs text-slate-500">Phone</p>
-            <p className="text-sm text-slate-800">{company.phone}</p>
-          </div>
-
-          <div className="space-y-1 md:col-span-2">
-            <p className="text-xs text-slate-500">Description</p>
-            <p className="text-sm text-slate-800 whitespace-pre-wrap">{company.description}</p>
-          </div>
-        </div>
-
-        <div className="mt-4">
-          <Button onClick={handleEdit}>Edit</Button>
-        </div>
+                {company.size && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900 mb-4">Company Details</h3>
+                    <div className="flex items-center gap-3 text-sm text-slate-600 bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+                      <Building2 className="h-5 w-5 text-blue-500" />
+                      <span className="font-medium text-slate-700">{company.size} Employees</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -261,10 +302,26 @@ export default function CompanyProfile() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         <div>
-          <label className="text-sm text-slate-600">Company Website</label>
-          <input className="mt-1 w-full rounded-md border border-slate-200 px-3 py-2 text-sm" value={company.website ?? ""} onChange={(e) => handleChange("website", e.target.value)} />
+          <label className="text-sm text-slate-600 mb-1 block">Company Website</label>
+          <input className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm" value={company.website ?? ""} onChange={(e) => handleChange("website", e.target.value)} />
+        </div>
+        <div>
+          <label className="text-sm text-slate-600 mb-1 block">Company Size</label>
+          <Select onValueChange={(val) => handleChange("size", val)} value={company.size || ""}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select company size" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="1-10">1-10 employees</SelectItem>
+              <SelectItem value="11-50">11-50 employees</SelectItem>
+              <SelectItem value="51-200">51-200 employees</SelectItem>
+              <SelectItem value="201-500">201-500 employees</SelectItem>
+              <SelectItem value="501-1000">501-1000 employees</SelectItem>
+              <SelectItem value="1000+">1000+ employees</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <div>
           <label className="text-sm text-slate-600">Upload Company Logo</label>

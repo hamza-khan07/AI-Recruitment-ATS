@@ -15,6 +15,7 @@ export interface Company {
   location: string;
   website: string;
   description: string;
+  address?: string;
 }
 
 export interface Job {
@@ -22,7 +23,9 @@ export interface Job {
   title: string;
   company: Company;
   location: string;
-  type: JobType;
+  type: JobType; // Legacy, keep for compatibility
+  workMode?: string;
+  employmentType?: string;
   experienceLevel: ExperienceLevel;
   salaryMin: number;
   salaryMax: number;

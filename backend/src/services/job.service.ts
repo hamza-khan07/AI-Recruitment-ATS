@@ -33,7 +33,7 @@ const resolveCompanyId = async (companyId: string | undefined, currentUserId: st
 
     // Auto-create a company for existing HR users who have no company yet
     if (currentUserRole === "HR") {
-      const companyName = user.name || user.email.split("@")[0];
+      const companyName: string = (user as any).name || ((user as any).email ? ((user as any).email as string).split("@")[0] : "Default Company");
       const baseSlug = companyName
         .toLowerCase()
         .trim()
@@ -72,6 +72,17 @@ export const jobService = {
     const openings = await jobRepository.sumOpenPositions(resolvedCompanyId);
 
     return { jobs, total, active, inactive, openings };
+  },
+
+  async listPublishedJobs(page = 1, perPage = 20, filters: any = {}) {
+    const skip = (page - 1) * perPage;
+    return jobRepository.findPublishedJobs(skip, perPage, filters);
+  },
+
+  async getPublishedJobById(jobId: string) {
+    const job = await jobRepository.getPublishedJobById(jobId);
+    if (!job) throw new Error("Job not found.");
+    return job;
   },
 
   async getJobById(jobId: string, companyId: string | undefined, currentUserId: string, currentUserRole: string) {

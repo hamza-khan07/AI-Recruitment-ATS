@@ -99,6 +99,74 @@ export const jobRepository = {
     });
   },
 
+  async findPublishedJobs(skip = 0, take = 20, filters: any = {}) {
+    const where: any = { status: "PUBLISHED" };
+
+    if (filters.search) {
+      where.OR = [
+        { title: { contains: filters.search, mode: "insensitive" } },
+        { department: { contains: filters.search, mode: "insensitive" } },
+        { company: { name: { contains: filters.search, mode: "insensitive" } } },
+      ];
+    }
+    
+    if (filters.location) {
+      where.location = { contains: filters.location, mode: "insensitive" };
+    }
+
+    if (filters.type) {
+      where.employmentType = filters.type;
+    }
+    
+    if (filters.experience) {
+      where.experience = filters.experience;
+    }
+
+    const [jobs, total] = await Promise.all([
+      anyPrisma.job.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take,
+        include: {
+          company: {
+            select: {
+              id: true,
+              name: true,
+              logo: true,
+              address: true,
+              size: true,
+              description: true,
+              websiteUrl: true,
+            }
+          }
+        }
+      }),
+      anyPrisma.job.count({ where })
+    ]);
+
+    return { jobs, total };
+  },
+
+  async getPublishedJobById(id: string) {
+    return anyPrisma.job.findFirst({
+      where: { id, status: "PUBLISHED" },
+      include: {
+        company: {
+          select: {
+            id: true,
+            name: true,
+            logo: true,
+            address: true,
+            size: true,
+            description: true,
+            websiteUrl: true,
+          }
+        }
+      }
+    });
+  },
+
   async countJobsForCompany(companyId: string, filters: any = {}) {
     const where: any = { companyId };
 

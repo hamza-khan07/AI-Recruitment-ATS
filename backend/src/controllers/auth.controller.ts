@@ -8,7 +8,7 @@ export const authController = {
       const data = loginSchema.parse(req.body);
       const tokens = await authService.login(data.email, data.password);
 
-      return res.status(200).json({ success: true, data: { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, role: tokens.role } });
+      return res.status(200).json({ success: true, data: { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, role: tokens.role, name: tokens.name, email: tokens.email } });
     } catch (error) {
       next(error);
     }

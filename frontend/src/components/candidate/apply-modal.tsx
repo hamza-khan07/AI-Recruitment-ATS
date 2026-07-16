@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef, type FormEvent } from "react";
+import { useState, useRef, useEffect, type FormEvent } from "react";
 import { X, Upload, CheckCircle2, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { Job } from "@/types/candidate";
+import api from "@/lib/api";
 
 interface ApplyModalProps {
   job: Job;
@@ -16,6 +17,7 @@ export function ApplyModal({ job, onClose }: ApplyModalProps) {
   const [step, setStep] = useState<Step>("form");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [resumeFile, setResumeFile] = useState<File | null>(null);
+  const [existingResumeUrl, setExistingResumeUrl] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -25,6 +27,35 @@ export function ApplyModal({ job, onClose }: ApplyModalProps) {
     phone: "",
     coverLetter: "",
   });
+
+  useEffect(() => {
+    api.get("/api/v1/candidates/profile").then((res: any) => {
+      const p = res.data?.data;
+      if (p) {
+        setForm((prev) => ({
+          ...prev,
+          fullName: prev.fullName || p.user?.name || p.name || "",
+          email: prev.email || p.user?.email || p.email || "",
+          phone: prev.phone || p.phone || "",
+        }));
+        if (p.resumeUrl) {
+          setExistingResumeUrl(p.resumeUrl);
+        }
+      } else {
+        const authRaw = typeof window !== "undefined" ? localStorage.getItem("auth_session") : null;
+        if (authRaw) {
+          try {
+            const authData = JSON.parse(authRaw);
+            setForm((prev) => ({
+              ...prev,
+              fullName: prev.fullName || authData?.user?.name || "",
+              email: prev.email || authData?.user?.email || "",
+            }));
+          } catch {}
+        }
+      }
+    }).catch(() => {});
+  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -155,6 +186,8 @@ export function ApplyModal({ job, onClose }: ApplyModalProps) {
                         ? "border-blue-400 bg-blue-50"
                         : resumeFile
                         ? "border-green-300 bg-green-50"
+                        : existingResumeUrl
+                        ? "border-blue-300 bg-blue-50/50"
                         : "border-zinc-200 bg-zinc-50 hover:border-blue-300 hover:bg-blue-50/40"
                     }`}
                   >
@@ -163,6 +196,12 @@ export function ApplyModal({ job, onClose }: ApplyModalProps) {
                         <CheckCircle2 className="h-6 w-6 text-green-500" />
                         <p className="text-sm font-medium text-green-700">{resumeFile.name}</p>
                         <p className="text-xs text-green-500">Click to change file</p>
+                      </div>
+                    ) : existingResumeUrl ? (
+                      <div className="flex flex-col items-center gap-1">
+                        <CheckCircle2 className="h-6 w-6 text-blue-500" />
+                        <p className="text-sm font-medium text-blue-700">Using Profile Resume</p>
+                        <p className="text-xs text-blue-500">Click to upload a different one</p>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center gap-1">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, notFound } from "next/navigation";
 import Link from "next/link";
 import {
@@ -19,11 +19,12 @@ import {
 } from "lucide-react";
 import { ApplyModal } from "@/components/candidate/apply-modal";
 import {
-  MOCK_JOBS,
   INITIAL_SAVED_JOB_IDS,
   formatSalary,
   timeAgo,
 } from "@/lib/candidate-mock-data";
+import { api } from "@/lib/api";
+import type { Job } from "@/types/candidate";
 
 const JOB_TYPE_LABELS: Record<string, string> = {
   FULL_TIME: "Full Time",
@@ -46,19 +47,64 @@ export default function JobDetailPage() {
   const params = useParams();
   const jobId = params?.id as string;
 
-  const job = MOCK_JOBS.find((j) => j.id === jobId);
-  if (!job) notFound();
+  const [job, setJob] = useState<Job | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    api.get(`/api/v1/jobs/published/${jobId}`)
+      .then(res => {
+        const j = res.data?.data;
+        if (!j) return;
+        const transformed: Job = {
+          id: j.id,
+          title: j.title,
+          company: {
+            ...j.company,
+            location: j.company?.address || "Remote",
+            size: j.company?.size || "Not Specified",
+            website: j.company?.websiteUrl || j.company?.website || "",
+          },
+          location: j.location || j.company?.address || "Remote",
+          type: j.workMode === "Remote" ? "REMOTE" : (j.employmentType === "Full-time" ? "FULL_TIME" : "HYBRID"),
+          workMode: j.workMode || "",
+          employmentType: j.employmentType || "",
+          experienceLevel: j.experience?.toUpperCase().includes("SENIOR") ? "SENIOR" : j.experience?.toUpperCase().includes("MID") ? "MID" : "ENTRY",
+          salaryMin: j.salaryMin || 0,
+          salaryMax: j.salaryMax || 0,
+          salaryCurrency: "PKR",
+          description: j.description || "",
+          responsibilities: j.responsibilities ? j.responsibilities.split("\n") : [],
+          requirements: j.requirements ? j.requirements.split("\n") : [],
+          benefits: j.benefits ? j.benefits.split("\n") : [],
+          skills: j.skills ? j.skills.split(",") : [],
+          status: "PUBLISHED",
+          openings: j.openPositions || 1,
+          postedAt: j.createdAt,
+          deadline: j.deadline || "",
+          featured: false
+        };
+        setJob(transformed);
+      })
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  }, [jobId]);
 
   const [applyOpen, setApplyOpen] = useState(false);
   const [saved, setSaved] = useState(INITIAL_SAVED_JOB_IDS.includes(jobId));
 
+  if (isLoading) {
+    return <div className="mx-auto max-w-5xl py-20 text-center text-zinc-500">Loading job details...</div>;
+  }
+
+  if (!job) {
+    notFound();
+  }
+
   const salary = formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency);
   const posted = timeAgo(job.postedAt);
 
-  // Related jobs from same company or same type
-  const relatedJobs = MOCK_JOBS.filter(
-    (j) => j.id !== job.id && (j.company.id === job.company.id || j.type === job.type)
-  ).slice(0, 3);
+  // Related jobs
+  const relatedJobs: Job[] = [];
 
   return (
     <>
@@ -79,9 +125,12 @@ export default function JobDetailPage() {
             <div className="rounded-2xl border border-zinc-200 bg-white p-6">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div className="flex items-start gap-4">
-                  {/* Company Logo */}
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-100 text-lg font-bold text-blue-700 ring-1 ring-blue-100">
-                    {job.company.logo}
+                  <div className="flex h-16 w-16 overflow-hidden shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-100 text-lg font-bold text-blue-700 ring-1 ring-blue-100">
+                    {job.company.logo && job.company.logo.length > 5 ? (
+                      <img src={job.company.logo} alt={job.company.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <Building2 className="h-8 w-8 text-blue-500" />
+                    )}
                   </div>
 
                   <div>
@@ -102,11 +151,10 @@ export default function JobDetailPage() {
                   <button
                     onClick={() => setSaved((prev) => !prev)}
                     aria-label={saved ? "Unsave job" : "Save job"}
-                    className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${
-                      saved
+                    className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${saved
                         ? "border-blue-200 bg-blue-50 text-blue-600"
                         : "border-zinc-200 text-zinc-400 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600"
-                    }`}
+                      }`}
                   >
                     {saved ? <BookmarkCheck className="h-5 w-5" /> : <Bookmark className="h-5 w-5" />}
                   </button>
@@ -236,9 +284,6 @@ export default function JobDetailPage() {
             <div className="rounded-2xl border border-zinc-200 bg-white p-5">
               <h3 className="mb-4 text-sm font-bold text-zinc-900">About the Company</h3>
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 text-sm font-bold text-blue-700 ring-1 ring-blue-100">
-                  {job.company.logo}
-                </div>
                 <div>
                   <p className="font-semibold text-zinc-900">{job.company.name}</p>
                   <p className="text-xs text-zinc-400">{job.company.industry}</p>
@@ -254,23 +299,21 @@ export default function JobDetailPage() {
                   <Users className="h-4 w-4 shrink-0 text-zinc-400" />
                   {job.company.size} employees
                 </div>
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-4 w-4 shrink-0 text-zinc-400" />
-                  {job.company.industry}
-                </div>
               </div>
 
               <p className="mt-3 text-xs text-zinc-500 leading-relaxed">{job.company.description}</p>
 
-              <a
-                href={job.company.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 py-2 text-xs font-medium text-zinc-600 transition hover:border-blue-200 hover:text-blue-600"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-                Visit Website
-              </a>
+              {job.company.website && (
+                <a
+                  href={job.company.website.startsWith("http") ? job.company.website : `https://${job.company.website}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-zinc-200 py-2 text-xs font-medium text-zinc-600 transition hover:border-blue-200 hover:text-blue-600"
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                  Visit Website
+                </a>
+              )}
             </div>
 
             {/* Job Summary */}

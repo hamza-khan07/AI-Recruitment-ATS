@@ -5,6 +5,10 @@ import { authMiddleware } from "../middlewares/auth.middleware.js";
 
 const jobRouter = Router();
 
+// Public routes for candidates
+jobRouter.get("/published", asyncHandler(jobController.listPublishedJobs));
+jobRouter.get("/published/:jobId", asyncHandler(jobController.getPublishedJob));
+
 jobRouter.use(authMiddleware.authenticate);
 
 // List jobs for a company: /jobs?companyId=...

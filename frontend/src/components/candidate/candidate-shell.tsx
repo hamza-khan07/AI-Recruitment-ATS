@@ -83,12 +83,23 @@ function NotificationDropdown({ onClose }: { onClose: () => void }) {
 
 // ─── User Dropdown ────────────────────────────────────────────────────────────
 
-function UserDropdown({ onClose, onLogout }: { onClose: () => void; onLogout: () => void }) {
+function UserDropdown({ 
+  onClose, 
+  onLogout,
+  user 
+}: { 
+  onClose: () => void; 
+  onLogout: () => void;
+  user: { name: string; email: string; role?: string } | null;
+}) {
+  const displayName = user?.name || "Candidate";
+  const displayRole = user?.role === "CANDIDATE" ? "Candidate" : user?.role || "Candidate";
+
   return (
     <div className="absolute right-0 top-12 z-50 w-56 rounded-2xl border border-zinc-200 bg-white py-1 shadow-xl shadow-zinc-200/50">
       <div className="border-b border-zinc-100 px-4 py-3">
-        <p className="text-sm font-semibold text-zinc-900">Ahmad Hassan</p>
-        <p className="text-xs text-zinc-500">Full Stack Developer</p>
+        <p className="text-sm font-semibold text-zinc-900">{displayName}</p>
+        <p className="text-xs text-zinc-500">{displayRole}</p>
       </div>
       <Link
         href="/candidate/profile"
@@ -210,12 +221,23 @@ function TopNavbar({ activePath }: { activePath: string }) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [user, setUser] = useState<{name: string, email: string, role?: string} | null>(null);
 
   const unreadCount = MOCK_NOTIFICATIONS.filter((n) => !n.read).length;
 
   useEffect(() => {
     const isDark = document.documentElement.classList.contains("dark");
     setDarkMode(isDark);
+
+    const authRaw = localStorage.getItem("auth_session");
+    if (authRaw) {
+      try {
+        const authData = JSON.parse(authRaw);
+        if (authData.user) {
+          setUser(authData.user);
+        }
+      } catch (err) {}
+    }
   }, []);
 
   const toggleTheme = () => {
@@ -233,6 +255,9 @@ function TopNavbar({ activePath }: { activePath: string }) {
     setNotifOpen(false);
     setUserOpen(false);
   };
+
+  const userInitials = user?.name ? user.name.slice(0, 2).toUpperCase() : "U";
+  const userFirstName = user?.name ? user.name.split(" ")[0] : "User";
 
   return (
     <>
@@ -321,13 +346,13 @@ function TopNavbar({ activePath }: { activePath: string }) {
                 className="flex items-center gap-2 rounded-xl border border-zinc-200 px-2 py-1.5 text-sm font-medium text-zinc-700 transition hover:border-blue-200 hover:bg-blue-50"
               >
                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-                  AH
+                  {userInitials}
                 </div>
-                <span className="hidden text-xs sm:block">Ahmad</span>
+                <span className="hidden text-xs sm:block">{userFirstName}</span>
                 <ChevronDown className="h-3 w-3 text-zinc-400 hidden sm:block" />
               </button>
               {userOpen && (
-                <UserDropdown onClose={closeDropdowns} onLogout={handleLogout} />
+                <UserDropdown onClose={closeDropdowns} onLogout={handleLogout} user={user} />
               )}
             </div>
           </div>

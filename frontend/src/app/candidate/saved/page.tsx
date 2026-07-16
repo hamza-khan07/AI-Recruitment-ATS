@@ -1,15 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Bookmark, Trash2, Briefcase } from "lucide-react";
 import { JobCard } from "@/components/candidate/job-card";
-import { MOCK_JOBS, INITIAL_SAVED_JOB_IDS } from "@/lib/candidate-mock-data";
+import { INITIAL_SAVED_JOB_IDS } from "@/lib/candidate-mock-data";
+import { api } from "@/lib/api";
+import type { Job } from "@/types/candidate";
 
 export default function SavedJobsPage() {
   const [savedIds, setSavedIds] = useState<Set<string>>(
     new Set(INITIAL_SAVED_JOB_IDS)
   );
+
+  const [liveJobs, setLiveJobs] = useState<Job[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    api.get("/api/v1/jobs/published")
+      .then(res => {
+        const backendJobs = res.data?.data?.jobs || [];
+        const transformed = backendJobs.map((j: any) => ({
+          id: j.id,
+          title: j.title,
+          company: j.company,
+          location: j.location || j.company?.address || "Remote",
+          type: j.workMode === "Remote" ? "REMOTE" : (j.employmentType === "Full-time" ? "FULL_TIME" : "HYBRID"),
+          workMode: j.workMode || "",
+          employmentType: j.employmentType || "",
+          experienceLevel: j.experience?.toUpperCase().includes("SENIOR") ? "SENIOR" : j.experience?.toUpperCase().includes("MID") ? "MID" : "ENTRY",
+          salaryMin: j.salaryMin || 0,
+          salaryMax: j.salaryMax || 0,
+          salaryCurrency: "PKR",
+          description: j.description || "",
+          responsibilities: j.responsibilities ? j.responsibilities.split("\n") : [],
+          requirements: j.requirements ? j.requirements.split("\n") : [],
+          benefits: j.benefits ? j.benefits.split("\n") : [],
+          skills: j.skills ? j.skills.split(",") : [],
+          status: "PUBLISHED",
+          openings: j.openPositions || 1,
+          postedAt: j.createdAt,
+          deadline: j.deadline || "",
+          featured: false
+        }));
+        setLiveJobs(transformed);
+      })
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  }, []);
 
   const toggleSave = (jobId: string) => {
     setSavedIds((prev) => {
@@ -21,7 +59,7 @@ export default function SavedJobsPage() {
 
   const clearAll = () => setSavedIds(new Set());
 
-  const savedJobs = MOCK_JOBS.filter((j) => savedIds.has(j.id));
+  const savedJobs = liveJobs.filter((j) => savedIds.has(j.id));
 
   return (
     <div className="space-y-6">
@@ -44,7 +82,9 @@ export default function SavedJobsPage() {
         )}
       </div>
 
-      {savedJobs.length > 0 ? (
+      {isLoading ? (
+        <div className="py-20 text-center text-zinc-500">Loading saved jobs...</div>
+      ) : savedJobs.length > 0 ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {savedJobs.map((job) => (
             <JobCard

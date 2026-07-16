@@ -60,8 +60,12 @@ export function JobCard({ job, saved, onToggleSave, compact = false }: JobCardPr
 
       {/* Header: Company logo + info */}
       <div className="flex items-start gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 text-sm font-bold text-blue-700 ring-1 ring-blue-100">
-          {job.company.logo}
+        <div className="flex h-12 w-12 overflow-hidden shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 text-sm font-bold text-blue-700 ring-1 ring-blue-100">
+          {job.company.logo && job.company.logo.length > 5 ? (
+            <img src={job.company.logo} alt={job.company.name} className="h-full w-full object-cover" />
+          ) : (
+            <span className="text-xs">{job.company.logo || job.company.name.substring(0, 2).toUpperCase()}</span>
+          )}
         </div>
 
         <div className="min-w-0 flex-1 pr-8">

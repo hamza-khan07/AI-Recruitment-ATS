@@ -35,7 +35,7 @@ export const authService = {
       expiresAt: refreshTokenExpiresAt,
     });
 
-    return { accessToken, refreshToken, role: user.role };
+    return { accessToken, refreshToken, role: user.role, name: user.name, email: user.email };
   },
 
   async logout(refreshToken: string) {

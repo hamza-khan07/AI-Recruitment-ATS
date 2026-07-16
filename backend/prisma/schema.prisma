@@ -20,6 +20,50 @@ model User {
   company       Company?       @relation(fields: [companyId], references: [id])
   ownedCompanies Company[]      @relation("CompanyOwner")
   refreshTokens RefreshToken[]
+  candidateProfile CandidateProfile?
+}
+
+model CandidateProfile {
+  id             String           @id @default(uuid())
+  userId         String           @unique
+  user           User             @relation(fields: [userId], references: [id])
+  title          String?
+  bio            String?
+  phone          String?
+  location       String?
+  linkedinUrl    String?
+  portfolioUrl   String?
+  resumeUrl      String?
+  avatar         String?
+  skills         String[]
+  workExperience WorkExperience[]
+  education      Education[]
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
+
+model WorkExperience {
+  id                 String           @id @default(uuid())
+  candidateProfileId String
+  candidateProfile   CandidateProfile @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
+  role               String
+  company            String
+  startDate          String?
+  endDate            String?
+  current            Boolean          @default(false)
+  description        String?
+}
+
+model Education {
+  id                 String           @id @default(uuid())
+  candidateProfileId String
+  candidateProfile   CandidateProfile @relation(fields: [candidateProfileId], references: [id], onDelete: Cascade)
+  degree             String
+  field              String?
+  institution        String
+  startYear          String?
+  endYear            String?
+  current            Boolean          @default(false)
 }
 
 model Company {
@@ -39,6 +83,7 @@ model Company {
   address       String?
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt
+  size          String?
   settings      CompanySettings?
 }
 

@@ -12,6 +12,7 @@ export interface CreateCompanyParams {
   email?: string;
   phone?: string;
   address?: string;
+  size?: string;
 }
 
 export interface UpdateCompanyParams {
@@ -25,6 +26,7 @@ export interface UpdateCompanyParams {
   email?: string;
   phone?: string;
   address?: string;
+  size?: string;
 }
 
 export interface CompanySettingsParams {
@@ -51,6 +53,7 @@ export const companyRepository = {
         email: data.email,
         phone: data.phone,
         address: data.address,
+        size: data.size,
       },
     });
   },
@@ -95,6 +98,7 @@ export const companyRepository = {
         email: data.email,
         phone: data.phone,
         address: data.address,
+        size: data.size,
       },
     });
   },

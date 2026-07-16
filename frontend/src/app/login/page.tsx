@@ -38,11 +38,14 @@ export default function LoginPage() {
       const accessToken = result.data?.accessToken;
       const refreshToken = result.data?.refreshToken;
       const role = (result.data?.role as string | undefined)?.toUpperCase();
+      const userName = result.data?.name;
+      const userEmail = result.data?.email;
 
       if (accessToken) {
         saveAuthToken(accessToken);
         if (refreshToken) saveRefreshToken(refreshToken);
         saveUserRole(role || "CANDIDATE");
+        localStorage.setItem("auth_session", JSON.stringify({ user: { name: userName, email: userEmail, role: role || "CANDIDATE" } }));
 
         if (role === "SUPER_ADMIN") {
           router.replace("/super-admin");

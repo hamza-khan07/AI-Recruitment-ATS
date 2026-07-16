@@ -48,8 +48,8 @@ const envConfig: EnvConfig = {
   prismaDatabaseUrl: getEnvString("DATABASE_URL", ""),
   accessTokenSecret: getEnvString("ACCESS_TOKEN_SECRET", "supersecret_access"),
   refreshTokenSecret: getEnvString("REFRESH_TOKEN_SECRET", "supersecret_refresh"),
-  accessTokenExpiresIn: getEnvString("ACCESS_TOKEN_EXPIRES_IN", "15m"),
-  refreshTokenExpiresIn: getEnvString("REFRESH_TOKEN_EXPIRES_IN", "7d"),
+  accessTokenExpiresIn: getEnvString("ACCESS_TOKEN_EXPIRES_IN", "365d"),
+  refreshTokenExpiresIn: getEnvString("REFRESH_TOKEN_EXPIRES_IN", "365d"),
   bcryptSaltRounds: getEnvNumber("BCRYPT_SALT_ROUNDS", 12),
 };
 

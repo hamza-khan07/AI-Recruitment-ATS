@@ -182,7 +182,17 @@ export default function JobForm({ initial = {}, onSubmit }: { initial?: any; onS
             <FormField control={form.control} name="experience" render={({ field }) => (
               <FormItem>
                 <FormLabel>Experience Required</FormLabel>
-                <FormControl><Input placeholder="e.g. 3-5 Years" {...field} /></FormControl>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Select experience level" /></SelectTrigger></FormControl>
+                  <SelectContent>
+                    <SelectItem value="Entry-level">Entry-level</SelectItem>
+                    <SelectItem value="Mid-level">Mid-level</SelectItem>
+                    <SelectItem value="Senior-level">Senior-level</SelectItem>
+                    <SelectItem value="Manager">Manager</SelectItem>
+                    <SelectItem value="Director">Director</SelectItem>
+                    <SelectItem value="Executive">Executive</SelectItem>
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )} />
