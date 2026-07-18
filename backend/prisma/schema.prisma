@@ -21,6 +21,7 @@ model User {
   ownedCompanies Company[]      @relation("CompanyOwner")
   refreshTokens RefreshToken[]
   candidateProfile CandidateProfile?
+  applications  Application[]  @relation("CandidateApplications")
 }
 
 model CandidateProfile {
@@ -123,9 +124,9 @@ enum JobStatus {
 }
 
 model Job {
-  id             String    @id @default(uuid())
+  id             String        @id @default(uuid())
   companyId      String
-  company        Company   @relation(fields: [companyId], references: [id])
+  company        Company       @relation(fields: [companyId], references: [id])
   title          String
   department     String?
   employmentType String?
@@ -134,17 +135,46 @@ model Job {
   salaryMin      Int?
   salaryMax      Int?
   experience     String?
-  openPositions   Int?      @default(1)
-  applications    Int       @default(0)
-  skills          String?
-  qualifications  String?
-  description     String?
+  openPositions  Int?          @default(1)
+  applications   Int           @default(0)
+  skills         String?
+  qualifications String?
+  description    String?
   responsibilities String?
-  requirements    String?
-  benefits        String?
-  deadline        DateTime?
-  status          JobStatus @default(DRAFT)
-  createdBy       String
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  requirements   String?
+  benefits       String?
+  deadline       DateTime?
+  status         JobStatus     @default(DRAFT)
+  createdBy      String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  jobApplications Application[]
 }
+
+enum ApplicationStatus {
+  APPLIED
+  IN_REVIEW
+  SHORTLISTED
+  INTERVIEW
+  REJECTED
+  HIRED
+}
+
+model Application {
+  id           String            @id @default(uuid())
+  jobId        String
+  job          Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  candidateId  String
+  candidate    User              @relation("CandidateApplications", fields: [candidateId], references: [id])
+  fullName     String
+  email        String
+  phone        String?
+  resumeUrl    String?
+  coverLetter  String?
+  status       ApplicationStatus @default(APPLIED)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@unique([jobId, candidateId])
+}
+

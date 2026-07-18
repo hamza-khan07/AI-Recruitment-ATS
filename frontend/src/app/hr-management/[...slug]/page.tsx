@@ -1,11 +1,11 @@
 import { PageContainer } from "@/components/hr/hr-shell";
+import { redirect } from "next/navigation";
 
 const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
   "company-profile": "Company Profile",
   "career-page": "Career Page",
   jobs: "Jobs",
-  applications: "Applications",
   candidates: "Candidates",
   "candidate-pipeline": "Candidate Pipeline",
   "interview-scheduling": "Interview Scheduling",
@@ -15,6 +15,11 @@ const pageTitles: Record<string, string> = {
 
 export default function HrManagementRoutePage({ params }: { params: { slug?: string[] } }) {
   const slug = params.slug?.[0] ?? "dashboard";
+
+  // Pages that have their own dedicated route — redirect to avoid showing placeholder
+  if (slug === "applications") redirect("/hr-management/applications");
+  if (slug === "candidate-pipeline") redirect("/hr-management/candidate-pipeline");
+
   const title = pageTitles[slug] ?? "Dashboard";
 
   return (

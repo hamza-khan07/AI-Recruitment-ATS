@@ -9,6 +9,8 @@ declare global {
 
 const prismaClient = globalThis.__prismaClient__;
 
+
+
 const prismaOptions = {
   adapter: new PrismaPg({ connectionString: env.prismaDatabaseUrl }),
   log: env.nodeEnv === "development"
@@ -16,10 +18,7 @@ const prismaOptions = {
     : ["error"],
 };
 
-const prisma = prismaClient ?? new PrismaClient(prismaOptions as any);
-
-if (env.nodeEnv === "development") {
-  globalThis.__prismaClient__ = prisma;
-}
+// Disable globalThis cache temporarily to force the new schema to load
+const prisma = new PrismaClient(prismaOptions as any);
 
 export default prisma;

@@ -25,6 +25,7 @@ app.get("/health", (req, res) => {
 });
 
 import { uploadRouter } from "./routes/upload.routes.js";
+import { applicationRouter } from "./routes/application.routes.js";
 import path from "path";
 
 app.use("/uploads", express.static(path.join(process.cwd(), "public/uploads")));
@@ -35,6 +36,7 @@ app.use(`${env.apiPrefix}/admin`, adminRouter);
 app.use(`${env.apiPrefix}/jobs`, jobRouter);
 app.use(`${env.apiPrefix}/candidates`, candidateRouter);
 app.use(`${env.apiPrefix}/upload`, uploadRouter);
+app.use(`${env.apiPrefix}/applications`, applicationRouter);
 
 app.use((req, res) => {
   res.status(404).json({ success: false, message: "Route not found." });
@@ -43,4 +45,4 @@ app.use((req, res) => {
 app.use(errorMiddleware);
 
 export default app;
-// Trigger restart 5
+// Trigger restart 6

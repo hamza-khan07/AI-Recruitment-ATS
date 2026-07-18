@@ -105,8 +105,8 @@ export function Sidebar({
   };
 
   const sidebarContent = (
-    <div className="flex h-full flex-col bg-slate-950 text-white">
-      <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
+    <div className="flex h-[100vh] flex-col bg-slate-950 text-white overflow-hidden">
+      <div className="flex shrink-0 items-center justify-between border-b border-slate-800 px-4 py-2">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-slate-100 text-sm font-semibold text-slate-950">
             HR
@@ -128,7 +128,7 @@ export function Sidebar({
         </Button>
       </div>
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-3">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-2">
         {sidebarItems.map((item) => {
           const active = isActive(activePath, item.href);
           const Icon = item.icon;
@@ -139,7 +139,7 @@ export function Sidebar({
               href={item.href}
               onClick={onClose}
               className={cn(
-                "flex items-center gap-2.5 rounded-2xl px-3 py-2 text-sm font-medium transition-all duration-200",
+                "flex items-center gap-2.5 rounded-2xl px-3 py-1.5 text-[13px] font-medium transition-all duration-200",
                 active
                   ? "bg-slate-700 text-white shadow-sm"
                   : "text-slate-300 hover:bg-slate-800 hover:text-white"
@@ -152,10 +152,10 @@ export function Sidebar({
         })}
       </nav>
 
-      <div className="border-t border-slate-800 p-2.5">
+      <div className="shrink-0 border-t border-slate-800 p-2">
         <button
           onClick={handleLogout}
-          className="flex w-full items-center gap-3 rounded-2xl px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
+          className="flex w-full items-center gap-3 rounded-2xl px-3 py-1.5 text-[13px] font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
         >
           <LogOut className="h-4 w-4" />
           {!collapsed && <span>Logout</span>}
@@ -304,13 +304,15 @@ export function HrPortalLayout({ children }: { children: ReactNode }) {
 
   const breadcrumbs = useMemo(() => buildBreadcrumbs(pathname), [pathname]);
   const activeTitle = useMemo(() => {
-    const slug = pathname.split("/").filter(Boolean).at(2) ?? "dashboard";
+    const parts = pathname.split("/").filter(Boolean);
+    // /hr-management/candidate-pipeline → parts[1] = "candidate-pipeline"
+    const slug = parts[1] ?? "dashboard";
     return pageTitles[slug] ?? "Dashboard";
   }, [pathname]);
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
-      <div className="mx-auto flex min-h-screen max-w-[1600px] flex-col lg:flex-row">
+    <div className="flex min-h-[100dvh] flex-col bg-zinc-50 text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
+      <div className="mx-auto flex w-full flex-1 max-w-[1600px] flex-col lg:flex-row">
         <Sidebar
           collapsed={collapsed}
           mobileOpen={mobileOpen}
@@ -319,7 +321,7 @@ export function HrPortalLayout({ children }: { children: ReactNode }) {
           activePath={pathname}
         />
 
-        <main className="flex-1">
+        <main className="flex-1 min-w-0">
           <TopNavbar
             title={activeTitle}
             breadcrumbs={breadcrumbs}

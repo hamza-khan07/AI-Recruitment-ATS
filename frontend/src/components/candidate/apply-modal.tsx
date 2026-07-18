@@ -76,14 +76,29 @@ export function ApplyModal({ job, onClose }: ApplyModalProps) {
     handleFileChange(e.dataTransfer.files?.[0] ?? null);
   };
 
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!form.fullName || !form.email) return;
+    setSubmitError(null);
     setIsSubmitting(true);
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setIsSubmitting(false);
-    setStep("success");
+    try {
+      const jobId = job.id;
+      await api.post(`/api/v1/candidates/jobs/${jobId}/apply`, {
+        fullName: form.fullName,
+        email: form.email,
+        phone: form.phone || null,
+        resumeUrl: existingResumeUrl || null,
+        coverLetter: form.coverLetter || null,
+      });
+      setStep("success");
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || "Failed to submit application. Please try again.";
+      setSubmitError(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -240,6 +255,11 @@ export function ApplyModal({ job, onClose }: ApplyModalProps) {
               </div>
 
               {/* Actions */}
+              {submitError && (
+                <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+                  {submitError}
+                </div>
+              )}
               <div className="mt-5 flex gap-3">
                 <Button
                   type="button"
