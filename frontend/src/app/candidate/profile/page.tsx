@@ -421,7 +421,7 @@ export default function CandidateProfilePage() {
               {/* Avatar */}
               <div className="relative group">
                 <div className="flex h-24 w-24 items-center justify-center rounded-2xl border-4 border-slate-100 bg-blue-600 text-3xl font-bold text-white shadow-lg select-none overflow-hidden">
-                  {profile.avatar && profile.avatar.startsWith("http") ? (
+                  {profile.avatar && (profile.avatar.startsWith("http") || profile.avatar.startsWith("/uploads")) ? (
                     <img src={profile.avatar} alt="Avatar" className="h-full w-full object-cover" />
                   ) : (
                     profile.avatar || (profile.name ? profile.name[0].toUpperCase() : "U")

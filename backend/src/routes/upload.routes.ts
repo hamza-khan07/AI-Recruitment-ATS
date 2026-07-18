@@ -11,8 +11,7 @@ uploadRouter.post("/", uploadMiddleware.single("file"), (req, res) => {
     return res.status(400).json({ success: false, message: "No file uploaded" });
   }
   
-  // Construct the URL to access the file
-  const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${req.file.filename}`;
+  const fileUrl = `/uploads/${req.file.filename}`;
   
   return res.status(200).json({
     success: true,

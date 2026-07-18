@@ -259,7 +259,7 @@ export default function ApplicationsPage() {
                     <td className="px-3 py-3">
                       <div className="flex items-center gap-3">
                         <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-blue-600 text-xs font-bold text-white">
-                          {avatar && avatar.startsWith("http") ? (
+                          {avatar && (avatar.startsWith("http") || avatar.startsWith("/uploads")) ? (
                             <img src={avatar} alt={app.fullName} className="h-full w-full object-cover" />
                           ) : (
                             getInitials(app.fullName)

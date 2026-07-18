@@ -200,7 +200,7 @@ export default function ApplicationDetailPage() {
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:items-start">
               {/* Avatar */}
               <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-blue-600 text-2xl font-bold text-white">
-                {profile?.avatar && profile.avatar.startsWith("http") ? (
+                {profile?.avatar && (profile.avatar.startsWith("http") || profile.avatar.startsWith("/uploads")) ? (
                   <img src={profile.avatar} alt={app.fullName} className="h-full w-full object-cover" />
                 ) : (
                   getInitials(app.fullName)
