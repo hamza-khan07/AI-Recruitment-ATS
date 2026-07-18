@@ -36,13 +36,17 @@ type ApplicationStatus =
   | "REJECTED"
   | "HIRED";
 
-interface Application {
+export interface Application {
   id: string;
   fullName: string;
   email: string;
   phone: string | null;
   resumeUrl: string | null;
   status: ApplicationStatus;
+  rating?: number | null;
+  notes?: string | null;
+  interviewDate?: string | null;
+  interviewEndTime?: string | null;
   createdAt: string;
   job: { id: string; title: string; department: string | null };
   candidate: {
@@ -213,16 +217,88 @@ function CandidateCard({
 
 // ─── Side Drawer ─────────────────────────────────────────────────────────────────
 
-function SideDrawer({
+export function SideDrawer({
   app,
   onClose,
   onStatusChange,
+  onUpdateApp,
 }: {
   app: Application | null;
   onClose: () => void;
   onStatusChange: (id: string, status: ApplicationStatus) => void;
+  onUpdateApp: (id: string, updates: Partial<Application>) => void;
 }) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  
+  const [rating, setRating] = useState<number>(0);
+  const [notes, setNotes] = useState<string>("");
+  const [interviewDate, setInterviewDate] = useState<string>("");
+  const [interviewEndTime, setInterviewEndTime] = useState<string>("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (app) {
+      setRating(app.rating || 0);
+      setNotes(app.notes || "");
+      // Convert UTC to local datetime-local format if exists
+      if (app.interviewDate) {
+        const d = new Date(app.interviewDate);
+        const tzOffset = d.getTimezoneOffset() * 60000;
+        const localISOTime = new Date(d.getTime() - tzOffset).toISOString().slice(0, 16);
+        setInterviewDate(localISOTime);
+      } else {
+        setInterviewDate("");
+      }
+      if (app.interviewEndTime) {
+        const d = new Date(app.interviewEndTime);
+        const tzOffset = d.getTimezoneOffset() * 60000;
+        const localISOTime = new Date(d.getTime() - tzOffset).toISOString().slice(0, 16);
+        setInterviewEndTime(localISOTime);
+      } else {
+        setInterviewEndTime("");
+      }
+    }
+  }, [app]);
+
+  const saveDetails = async (updates: Partial<Application>) => {
+    if (!app) return;
+    setIsSaving(true);
+    try {
+      // Validate time between 9am and 5pm if provided
+      if (updates.interviewDate) {
+        const d = new Date(updates.interviewDate);
+        if (d.getHours() < 9 || d.getHours() >= 17) {
+           alert("Interview Start Time must be between 9 AM and 5 PM");
+           setIsSaving(false);
+           return;
+        }
+      }
+      if (updates.interviewEndTime) {
+        const d = new Date(updates.interviewEndTime);
+        if (d.getHours() < 9 || (d.getHours() === 17 && d.getMinutes() > 0) || d.getHours() > 17) {
+           alert("Interview End Time must be between 9 AM and 5 PM");
+           setIsSaving(false);
+           return;
+        }
+      }
+
+      // For interviewDate, convert local to UTC ISO string if provided
+      const payload: any = { ...updates };
+      if (updates.interviewDate) {
+        payload.interviewDate = new Date(updates.interviewDate).toISOString();
+      }
+      if (updates.interviewEndTime) {
+        payload.interviewEndTime = new Date(updates.interviewEndTime).toISOString();
+      }
+      
+      const { data } = await api.patch(`/api/v1/applications/${app.id}/details`, payload);
+      onUpdateApp(app.id, updates);
+    } catch (error) {
+      console.error("Failed to update details:", error);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
@@ -305,6 +381,30 @@ function SideDrawer({
           >
             <X className="h-5 w-5" />
           </Button>
+        </div>
+
+        {/* Rating Section */}
+        <div className="border-b border-zinc-100 px-6 py-4 flex items-center justify-between">
+          <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Rating</p>
+          <div className="flex items-center gap-1">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <button
+                key={star}
+                onClick={() => {
+                  setRating(star);
+                  saveDetails({ rating: star });
+                }}
+                className={cn(
+                  "transition-colors hover:text-amber-400",
+                  rating >= star ? "text-amber-400" : "text-zinc-200"
+                )}
+              >
+                <svg className="h-5 w-5 fill-current" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Body */}
@@ -421,6 +521,66 @@ function SideDrawer({
               </a>
             </div>
           )}
+
+          {/* Interview Scheduling */}
+          <div className="border-b border-zinc-100 px-6 py-4 space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">Interview Schedule</p>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="w-12 text-xs font-medium text-zinc-500">Start</span>
+                <input
+                  type="datetime-local"
+                  value={interviewDate}
+                  onChange={(e) => setInterviewDate(e.target.value)}
+                  className="flex-1 rounded-xl border border-zinc-200 px-3 py-2 text-sm text-zinc-800 focus:border-zinc-950 focus:outline-none focus:ring-1 focus:ring-zinc-950"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-12 text-xs font-medium text-zinc-500">End</span>
+                <input
+                  type="datetime-local"
+                  value={interviewEndTime}
+                  onChange={(e) => setInterviewEndTime(e.target.value)}
+                  className="flex-1 rounded-xl border border-zinc-200 px-3 py-2 text-sm text-zinc-800 focus:border-zinc-950 focus:outline-none focus:ring-1 focus:ring-zinc-950"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => saveDetails({ 
+                  interviewDate: interviewDate || null,
+                  interviewEndTime: interviewEndTime || null 
+                })}
+                disabled={isSaving}
+                className="w-full mt-2 rounded-xl"
+              >
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Times"}
+              </Button>
+            </div>
+          </div>
+
+          {/* HR Notes */}
+          <div className="border-b border-zinc-100 px-6 py-4 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold uppercase tracking-wider text-zinc-400">HR Notes</p>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-auto p-0 text-xs text-blue-600 hover:bg-transparent hover:text-blue-700 hover:underline"
+                onClick={() => saveDetails({ notes })}
+                disabled={isSaving}
+              >
+                Save Notes
+              </Button>
+            </div>
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Add private notes about this candidate..."
+              className="w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-3 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 focus:border-zinc-950 focus:bg-white focus:outline-none focus:ring-1 focus:ring-zinc-950"
+              rows={4}
+            />
+          </div>
         </div>
 
         {/* Footer — Move Stage */}
@@ -657,6 +817,12 @@ export default function CandidatePipelinePage() {
         onStatusChange={(id, status) => {
           handleStatusChange(id, status);
           setSelectedApp((prev) => (prev?.id === id ? { ...prev, status } : prev));
+        }}
+        onUpdateApp={(id, updates) => {
+          setAllApps((prev) =>
+            prev.map((a) => (a.id === id ? { ...a, ...updates } : a))
+          );
+          setSelectedApp((prev) => (prev?.id === id ? { ...prev, ...updates } : prev));
         }}
       />
     </div>

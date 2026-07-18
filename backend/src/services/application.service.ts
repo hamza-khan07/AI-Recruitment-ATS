@@ -52,4 +52,21 @@ export const applicationService = {
     }
     return applicationRepository.updateStatus(id, status);
   },
+
+  async updateDetails(
+    id: string,
+    data: { rating?: number; notes?: string; interviewDate?: Date | null; interviewEndTime?: Date | null },
+    companyId: string
+  ) {
+    const application = await applicationRepository.findById(id);
+    if (!application) {
+      throw Object.assign(new Error("Application not found."), { statusCode: 404 });
+    }
+    if ((application as any).job?.company?.id !== companyId) {
+      throw Object.assign(new Error("Access denied."), { statusCode: 403 });
+    }
+
+    const updated = await applicationRepository.updateDetails(id, data);
+    return updated;
+  },
 };

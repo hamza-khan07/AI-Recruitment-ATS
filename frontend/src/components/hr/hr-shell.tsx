@@ -40,10 +40,8 @@ type SidebarItem = {
 const sidebarItems: SidebarItem[] = [
   { id: "dashboard", label: "Dashboard", href: "/hr-management", icon: LayoutDashboard },
   { id: "company-profile", label: "Company Profile", href: "/hr-management/company-profile", icon: Building2 },
-  { id: "career-page", label: "Career Page", href: "/hr-management/career-page", icon: Newspaper },
   { id: "jobs", label: "Jobs", href: "/hr-management/jobs", icon: BriefcaseBusiness },
   { id: "applications", label: "Applications", href: "/hr-management/applications", icon: FileText },
-  { id: "candidates", label: "Candidates", href: "/hr-management/candidates", icon: Users },
   { id: "candidate-pipeline", label: "Candidate Pipeline", href: "/hr-management/candidate-pipeline", icon: Workflow },
   { id: "interview-scheduling", label: "Interview Scheduling", href: "/hr-management/interview-scheduling", icon: CalendarDays },
   { id: "ai-job-description", label: "AI Job Description", href: "/hr-management/ai-job-description", icon: Sparkles },
@@ -53,10 +51,8 @@ const sidebarItems: SidebarItem[] = [
 const pageTitles: Record<string, string> = {
   dashboard: "Dashboard",
   "company-profile": "Company Profile",
-  "career-page": "Career Page",
   jobs: "Jobs",
   applications: "Applications",
-  candidates: "Candidates",
   "candidate-pipeline": "Candidate Pipeline",
   "interview-scheduling": "Interview Scheduling",
   "ai-job-description": "AI Job Description",

@@ -101,4 +101,47 @@ export const applicationController = {
       next(error);
     }
   },
+
+  /** PATCH /applications/:id/details — HR: update rating, notes, interviewDate */
+  async updateDetails(req: Request, res: Response, next: NextFunction) {
+    try {
+      const currentUserId = (req as any).user?.id;
+      const user = await authRepository.findUserById(currentUserId);
+      const companyId = (user as any)?.companyId;
+      if (!companyId) return res.status(403).json({ success: false, message: "No company associated with your account." });
+
+      const id = req.params.id as string;
+      const { rating, notes, interviewDate, interviewEndTime } = req.body;
+
+      let parsedDate: Date | null = null;
+      if (interviewDate) {
+        parsedDate = new Date(interviewDate);
+      } else if (interviewDate === null) {
+        parsedDate = null;
+      } else {
+        parsedDate = undefined as any; // Ignore if not provided
+      }
+      
+      let parsedEndDate: Date | null = null;
+      if (interviewEndTime) {
+        parsedEndDate = new Date(interviewEndTime);
+      } else if (interviewEndTime === null) {
+        parsedEndDate = null;
+      } else {
+        parsedEndDate = undefined as any;
+      }
+
+      const updated = await applicationService.updateDetails(id, { 
+        rating, 
+        notes, 
+        ...(interviewDate !== undefined && { interviewDate: parsedDate }),
+        ...(interviewEndTime !== undefined && { interviewEndTime: parsedEndDate })
+      }, companyId);
+      return res.status(200).json({ success: true, data: updated });
+    } catch (error: any) {
+      if (error.statusCode === 404) return res.status(404).json({ success: false, message: error.message });
+      if (error.statusCode === 403) return res.status(403).json({ success: false, message: error.message });
+      next(error);
+    }
+  },
 };

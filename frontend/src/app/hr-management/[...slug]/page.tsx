@@ -19,6 +19,7 @@ export default function HrManagementRoutePage({ params }: { params: { slug?: str
   // Pages that have their own dedicated route — redirect to avoid showing placeholder
   if (slug === "applications") redirect("/hr-management/applications");
   if (slug === "candidate-pipeline") redirect("/hr-management/candidate-pipeline");
+  if (slug === "interview-scheduling") redirect("/hr-management/interview-scheduling");
 
   const title = pageTitles[slug] ?? "Dashboard";
 

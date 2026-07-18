@@ -29,7 +29,7 @@ export const applicationRepository = {
   /** HR: get all applications for jobs that belong to a given company */
   async findByCompanyId(
     companyId: string,
-    filters: { status?: string; jobId?: string; search?: string },
+    filters: { status?: string; jobId?: string; search?: string; hasInterview?: boolean },
     page: number,
     perPage: number
   ) {
@@ -38,6 +38,7 @@ export const applicationRepository = {
     };
     if (filters.status) where.status = filters.status;
     if (filters.jobId) where.jobId = filters.jobId;
+    if (filters.hasInterview) where.interviewDate = { not: null };
     if (filters.search) {
       where.OR = [
         { fullName: { contains: filters.search, mode: "insensitive" } },
@@ -51,7 +52,7 @@ export const applicationRepository = {
         where,
         skip: (page - 1) * perPage,
         take: perPage,
-        orderBy: { createdAt: "desc" },
+        orderBy: filters.hasInterview ? { interviewDate: "asc" } : { createdAt: "desc" },
         include: {
           job: { select: { id: true, title: true, department: true } },
           candidate: {
@@ -104,6 +105,13 @@ export const applicationRepository = {
     return anyPrisma.application.update({
       where: { id },
       data: { status },
+    });
+  },
+
+  async updateDetails(id: string, data: { rating?: number; notes?: string; interviewDate?: Date | null }) {
+    return anyPrisma.application.update({
+      where: { id },
+      data,
     });
   },
 };

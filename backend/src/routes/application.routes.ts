@@ -23,5 +23,10 @@ applicationRouter.patch(
   authMiddleware.authorize(["HR", "SUPER_ADMIN"]),
   asyncHandler(applicationController.updateStatus)
 );
+applicationRouter.patch(
+  "/:id/details",
+  authMiddleware.authorize(["HR", "SUPER_ADMIN"]),
+  asyncHandler(applicationController.updateDetails)
+);
 
 export { applicationRouter };
