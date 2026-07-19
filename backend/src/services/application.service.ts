@@ -21,6 +21,10 @@ export const applicationService = {
     return applicationRepository.create({ jobId, candidateId, ...data });
   },
 
+  async getCandidateApplications(candidateId: string) {
+    return applicationRepository.findByCandidateId(candidateId);
+  },
+
   async getCompanyApplications(
     companyId: string,
     filters: { status?: string; jobId?: string; search?: string },

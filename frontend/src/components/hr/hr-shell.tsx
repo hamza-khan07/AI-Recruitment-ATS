@@ -44,7 +44,6 @@ const sidebarItems: SidebarItem[] = [
   { id: "applications", label: "Applications", href: "/hr-management/applications", icon: FileText },
   { id: "candidate-pipeline", label: "Candidate Pipeline", href: "/hr-management/candidate-pipeline", icon: Workflow },
   { id: "interview-scheduling", label: "Interview Scheduling", href: "/hr-management/interview-scheduling", icon: CalendarDays },
-  { id: "ai-job-description", label: "AI Job Description", href: "/hr-management/ai-job-description", icon: Sparkles },
   { id: "email-templates", label: "Email Templates", href: "/hr-management/email-templates", icon: Mail },
 ];
 
@@ -55,7 +54,6 @@ const pageTitles: Record<string, string> = {
   applications: "Applications",
   "candidate-pipeline": "Candidate Pipeline",
   "interview-scheduling": "Interview Scheduling",
-  "ai-job-description": "AI Job Description",
   "email-templates": "Email Templates",
 };
 

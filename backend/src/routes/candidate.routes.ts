@@ -11,5 +11,6 @@ candidateRouter.use(authMiddleware.authenticate);
 candidateRouter.get("/profile", authMiddleware.authorize(["CANDIDATE"]), asyncHandler(candidateController.getProfile));
 candidateRouter.post("/profile", authMiddleware.authorize(["CANDIDATE"]), asyncHandler(candidateController.upsertProfile));
 candidateRouter.post("/jobs/:jobId/apply", authMiddleware.authorize(["CANDIDATE"]), asyncHandler(applicationController.apply));
+candidateRouter.get("/applications", authMiddleware.authorize(["CANDIDATE"]), asyncHandler(applicationController.listForCandidate));
 
 export { candidateRouter };

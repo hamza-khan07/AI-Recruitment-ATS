@@ -13,6 +13,7 @@ interface EnvConfig {
   accessTokenExpiresIn: string;
   refreshTokenExpiresIn: string;
   bcryptSaltRounds: number;
+  groqApiKey: string;
 }
 
 const getEnvNumber = (key: string, fallback: number): number => {
@@ -51,6 +52,7 @@ const envConfig: EnvConfig = {
   accessTokenExpiresIn: getEnvString("ACCESS_TOKEN_EXPIRES_IN", "365d"),
   refreshTokenExpiresIn: getEnvString("REFRESH_TOKEN_EXPIRES_IN", "365d"),
   bcryptSaltRounds: getEnvNumber("BCRYPT_SALT_ROUNDS", 12),
+  groqApiKey: getEnvString("GROQ_API_KEY", ""),
 };
 
 export const env = envConfig;

@@ -37,6 +37,19 @@ export const applicationController = {
     }
   },
 
+  /** GET /candidates/applications — Candidate: list their own applications */
+  async listForCandidate(req: Request, res: Response, next: NextFunction) {
+    try {
+      const candidateId = (req as any).user?.id;
+      if (!candidateId) return res.status(401).json({ success: false, message: "Authentication required." });
+
+      const applications = await applicationService.getCandidateApplications(candidateId);
+      return res.status(200).json({ success: true, data: applications });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   /** GET /applications — HR: list all applications for their company */
   async listForCompany(req: Request, res: Response, next: NextFunction) {
     try {

@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { FileText, Briefcase, MapPin, Clock, ChevronRight, Filter } from "lucide-react";
+import { FileText, Briefcase, MapPin, Clock, ChevronRight, Filter, Loader2, AlertCircle } from "lucide-react";
 import { StatusBadge } from "@/components/candidate/status-badge";
-import { MOCK_APPLICATIONS, timeAgo } from "@/lib/candidate-mock-data";
+import { timeAgo } from "@/lib/candidate-mock-data";
 import type { ApplicationStatus } from "@/types/candidate";
 import { cn } from "@/lib/utils";
+import api, { getData } from "@/lib/api";
 
 const STATUS_FILTERS: { value: ApplicationStatus | "ALL"; label: string }[] = [
   { value: "ALL", label: "All" },
@@ -28,6 +29,7 @@ const TIMELINE_STEPS: ApplicationStatus[] = [
 ];
 
 function getStepIndex(status: ApplicationStatus) {
+  // If status is not in timeline steps, it returns -1 (which hides progress)
   return TIMELINE_STEPS.indexOf(status);
 }
 
@@ -42,19 +44,57 @@ const JOB_TYPE_LABELS: Record<string, string> = {
 
 export default function ApplicationsPage() {
   const [statusFilter, setStatusFilter] = useState<ApplicationStatus | "ALL">("ALL");
+  const [applications, setApplications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  const filtered = MOCK_APPLICATIONS.filter(
+  useEffect(() => {
+    const fetchApplications = async () => {
+      try {
+        const data = await api.get("/candidates/applications").then(getData<any[]>);
+        setApplications(data || []);
+      } catch (err: any) {
+        console.error("Failed to load applications:", err);
+        setError(err.response?.data?.message || "Failed to load applications.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchApplications();
+  }, []);
+
+  const filtered = applications.filter(
     (app) => statusFilter === "ALL" || app.status === statusFilter
   );
 
   const stats = {
-    total: MOCK_APPLICATIONS.length,
-    active: MOCK_APPLICATIONS.filter((a) =>
+    total: applications.length,
+    active: applications.filter((a) =>
       ["APPLIED", "IN_REVIEW", "SHORTLISTED", "INTERVIEWED"].includes(a.status)
     ).length,
-    offered: MOCK_APPLICATIONS.filter((a) => a.status === "OFFERED").length,
-    rejected: MOCK_APPLICATIONS.filter((a) => a.status === "REJECTED").length,
+    offered: applications.filter((a) => a.status === "OFFERED").length,
+    rejected: applications.filter((a) => a.status === "REJECTED").length,
   };
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-xl bg-red-50 p-6 text-center text-red-600">
+        <AlertCircle className="mx-auto mb-2 h-8 w-8 opacity-80" />
+        <p className="font-medium">{error}</p>
+        <button onClick={() => window.location.reload()} className="mt-4 text-sm font-semibold hover:underline">
+          Try again
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -120,30 +160,34 @@ export default function ApplicationsPage() {
               >
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   {/* Job info */}
-                  <div className="flex items-start gap-4">
+                    <div className="flex items-start gap-4">
                     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 text-sm font-bold text-blue-700 ring-1 ring-blue-100">
-                      {app.job.company.logo}
+                      {app.job?.company?.logo ? (
+                        <img src={app.job.company.logo} alt="logo" className="h-full w-full object-cover rounded-xl" />
+                      ) : (
+                        app.job?.company?.name?.charAt(0) || "C"
+                      )}
                     </div>
                     <div>
                       <Link
-                        href={`/candidate/jobs/${app.job.id}`}
+                        href={`/candidate/jobs/${app.job?.id}`}
                         className="text-base font-bold text-zinc-900 transition group-hover:text-blue-700"
                       >
-                        {app.job.title}
+                        {app.job?.title}
                       </Link>
-                      <p className="mt-0.5 text-sm text-zinc-500">{app.job.company.name}</p>
+                      <p className="mt-0.5 text-sm text-zinc-500">{app.job?.company?.name}</p>
                       <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-zinc-400">
                         <span className="flex items-center gap-1">
                           <MapPin className="h-3 w-3" />
-                          {app.job.location}
+                          {app.job?.location || "Remote"}
                         </span>
                         <span className="flex items-center gap-1">
                           <Briefcase className="h-3 w-3" />
-                          {JOB_TYPE_LABELS[app.job.type] ?? app.job.type}
+                          {app.job?.employmentType ? (JOB_TYPE_LABELS[app.job.employmentType] ?? app.job.employmentType) : "Full Time"}
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          Applied {timeAgo(app.appliedAt)}
+                          Applied {timeAgo(app.createdAt)}
                         </span>
                       </div>
                     </div>
@@ -153,7 +197,7 @@ export default function ApplicationsPage() {
                   <div className="flex items-center gap-3 sm:shrink-0 sm:flex-col sm:items-end">
                     <StatusBadge status={app.status} />
                     <Link
-                      href={`/candidate/jobs/${app.job.id}`}
+                      href={`/candidate/jobs/${app.job?.id}`}
                       className="flex items-center gap-1 text-xs font-medium text-blue-600 hover:underline"
                     >
                       View Job <ChevronRight className="h-3 w-3" />

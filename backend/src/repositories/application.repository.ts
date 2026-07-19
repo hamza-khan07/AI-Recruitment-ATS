@@ -26,6 +26,24 @@ export const applicationRepository = {
     });
   },
 
+  async findByCandidateId(candidateId: string) {
+    return anyPrisma.application.findMany({
+      where: { candidateId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        job: {
+          select: {
+            id: true,
+            title: true,
+            location: true,
+            employmentType: true,
+            company: { select: { name: true, logo: true } },
+          },
+        },
+      },
+    });
+  },
+
   /** HR: get all applications for jobs that belong to a given company */
   async findByCompanyId(
     companyId: string,

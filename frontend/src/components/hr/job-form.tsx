@@ -12,7 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Sparkles } from "lucide-react";
+import api from "@/lib/api";
 
 const jobFormSchema = z.object({
   title: z.string().min(2, "Job title must be at least 2 characters"),
@@ -36,8 +37,47 @@ const jobFormSchema = z.object({
 
 type JobFormValues = z.infer<typeof jobFormSchema>;
 
+// ─── AI Field Types ───────────────────────────────────────────────────────────
+type AIField =
+  | "description"
+  | "responsibilities"
+  | "requirements"
+  | "qualifications"
+  | "skills"
+  | "benefits";
+
+// ─── AI Generate Button Component ─────────────────────────────────────────────
+// A small reusable button that shows a spinner while AI is generating
+function AIButton({
+  field,
+  onClick,
+  isGenerating,
+}: {
+  field: AIField;
+  onClick: (field: AIField) => void;
+  isGenerating: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onClick(field)}
+      disabled={isGenerating}
+      className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-violet-500 to-indigo-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:from-violet-600 hover:to-indigo-600 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {isGenerating ? (
+        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+      ) : (
+        <Sparkles className="h-3.5 w-3.5" />
+      )}
+      {isGenerating ? "Generating…" : "Generate with AI"}
+    </button>
+  );
+}
+
 export default function JobForm({ initial = {}, onSubmit }: { initial?: any; onSubmit: (data: any) => Promise<void> }) {
   const [submitting, setSubmitting] = useState(false);
+  // Track which field is currently being generated (null means none)
+  const [generatingField, setGeneratingField] = useState<AIField | null>(null);
 
   const form = useForm<JobFormValues>({
     resolver: zodResolver(jobFormSchema),
@@ -61,6 +101,57 @@ export default function JobForm({ initial = {}, onSubmit }: { initial?: any; onS
       status: initial.status || "DRAFT",
     },
   });
+
+  // ─── AI Generation Logic ────────────────────────────────────────────────────
+  // This function is called when any "Generate with AI" button is clicked.
+  // 
+  // HOW IT WORKS:
+  // 1. We read the CURRENT form values (title, dept, etc.) as "context"
+  // 2. We call our backend API POST /api/v1/ai/generate-job-content
+  // 3. Backend sends those to Gemini API with a tailored prompt
+  // 4. We receive the generated text and fill it into the correct form field
+  const generateWithAI = async (field: AIField) => {
+    // Step 1: Validate that title is filled - it's the most important context
+    const currentValues = form.getValues();
+    if (!currentValues.title || currentValues.title.trim().length < 2) {
+      toast.error("Please enter a Job Title first before generating AI content.");
+      return;
+    }
+
+    setGeneratingField(field);
+
+    try {
+      // Step 2: Build the context object from current form values
+      // This is what Gemini will use to understand what kind of job this is
+      const context = {
+        title: currentValues.title,
+        department: currentValues.department,
+        employmentType: currentValues.employmentType,
+        workMode: currentValues.workMode,
+        experience: currentValues.experience,
+        location: currentValues.location,
+      };
+
+      // Step 3: Call our backend API
+      // The backend will build the right prompt and call Gemini
+      const { data } = await api.post("/api/v1/ai/generate-job-content", {
+        field,   // e.g. "description", "skills", etc.
+        context, // All the job details
+      });
+
+      if (data.success) {
+        // Step 4: Fill the generated text into the correct form field
+        // form.setValue() programmatically updates a field's value
+        form.setValue(field, data.data.text, { shouldValidate: true });
+        toast.success(`AI generated ${field} successfully!`);
+      }
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || "Failed to generate content. Please try again.";
+      toast.error(msg);
+    } finally {
+      setGeneratingField(null);
+    }
+  };
 
   const submitJob = async (values: JobFormValues, forcedStatus?: string) => {
     setSubmitting(true);
@@ -218,22 +309,65 @@ export default function JobForm({ initial = {}, onSubmit }: { initial?: any; onS
         {/* Description & Responsibilities Section */}
         <Card>
           <CardHeader>
-            <h3 className="text-lg font-semibold leading-none tracking-tight">Role Description</h3>
-            <p className="text-sm text-zinc-500">Describe what the candidate will do.</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-semibold leading-none tracking-tight">Role Description</h3>
+                <p className="text-sm text-zinc-500 mt-1">Describe what the candidate will do.</p>
+              </div>
+              {/* One button to generate ALL text fields at once */}
+              <button
+                type="button"
+                onClick={async () => {
+                  const currentValues = form.getValues();
+                  if (!currentValues.title || currentValues.title.trim().length < 2) {
+                    toast.error("Please enter a Job Title first.");
+                    return;
+                  }
+                  toast.info("Generating all fields with AI… This may take a moment.");
+                  const fields: AIField[] = ["description", "responsibilities", "requirements", "qualifications", "skills", "benefits"];
+                  for (const f of fields) {
+                    await generateWithAI(f);
+                  }
+                }}
+                disabled={!!generatingField}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition-all hover:from-violet-700 hover:to-indigo-700 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {generatingField ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+                {generatingField ? "AI Writing…" : "✨ Generate All with AI"}
+              </button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-6">
             <FormField control={form.control} name="description" render={({ field }) => (
               <FormItem>
-                <FormLabel>Job Description *</FormLabel>
-                <FormControl><Textarea placeholder="Enter full job description here..." className="min-h-[150px]" {...field} /></FormControl>
+                <div className="flex items-center justify-between">
+                  <FormLabel>Job Description *</FormLabel>
+                  <AIButton
+                    field="description"
+                    onClick={generateWithAI}
+                    isGenerating={generatingField === "description"}
+                  />
+                </div>
+                <FormControl><Textarea placeholder="Enter full job description or click 'Generate with AI'…" className="min-h-[150px]" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             
             <FormField control={form.control} name="responsibilities" render={({ field }) => (
               <FormItem>
-                <FormLabel>Responsibilities</FormLabel>
-                <FormControl><Textarea placeholder="List the key responsibilities..." className="min-h-[100px]" {...field} /></FormControl>
+                <div className="flex items-center justify-between">
+                  <FormLabel>Responsibilities</FormLabel>
+                  <AIButton
+                    field="responsibilities"
+                    onClick={generateWithAI}
+                    isGenerating={generatingField === "responsibilities"}
+                  />
+                </div>
+                <FormControl><Textarea placeholder="List the key responsibilities or click 'Generate with AI'…" className="min-h-[120px]" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
@@ -249,24 +383,45 @@ export default function JobForm({ initial = {}, onSubmit }: { initial?: any; onS
           <CardContent className="space-y-6">
             <FormField control={form.control} name="requirements" render={({ field }) => (
               <FormItem>
-                <FormLabel>Requirements</FormLabel>
-                <FormControl><Textarea placeholder="List the requirements..." className="min-h-[100px]" {...field} /></FormControl>
+                <div className="flex items-center justify-between">
+                  <FormLabel>Requirements</FormLabel>
+                  <AIButton
+                    field="requirements"
+                    onClick={generateWithAI}
+                    isGenerating={generatingField === "requirements"}
+                  />
+                </div>
+                <FormControl><Textarea placeholder="List the requirements or click 'Generate with AI'…" className="min-h-[120px]" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
 
             <FormField control={form.control} name="qualifications" render={({ field }) => (
               <FormItem>
-                <FormLabel>Qualifications</FormLabel>
-                <FormControl><Textarea placeholder="List educational and other qualifications..." className="min-h-[100px]" {...field} /></FormControl>
+                <div className="flex items-center justify-between">
+                  <FormLabel>Qualifications</FormLabel>
+                  <AIButton
+                    field="qualifications"
+                    onClick={generateWithAI}
+                    isGenerating={generatingField === "qualifications"}
+                  />
+                </div>
+                <FormControl><Textarea placeholder="List educational and other qualifications or click 'Generate with AI'…" className="min-h-[120px]" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
             
             <FormField control={form.control} name="skills" render={({ field }) => (
               <FormItem>
-                <FormLabel>Required Skills (comma-separated)</FormLabel>
-                <FormControl><Input placeholder="e.g. React, Node.js, TypeScript" {...field} /></FormControl>
+                <div className="flex items-center justify-between">
+                  <FormLabel>Required Skills (comma-separated)</FormLabel>
+                  <AIButton
+                    field="skills"
+                    onClick={generateWithAI}
+                    isGenerating={generatingField === "skills"}
+                  />
+                </div>
+                <FormControl><Input placeholder="e.g. React, Node.js, TypeScript — or click 'Generate with AI'" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
@@ -282,8 +437,15 @@ export default function JobForm({ initial = {}, onSubmit }: { initial?: any; onS
           <CardContent>
             <FormField control={form.control} name="benefits" render={({ field }) => (
               <FormItem>
-                <FormLabel>Benefits</FormLabel>
-                <FormControl><Textarea placeholder="List the benefits (e.g. Health Insurance, 401k)..." className="min-h-[100px]" {...field} /></FormControl>
+                <div className="flex items-center justify-between">
+                  <FormLabel>Benefits</FormLabel>
+                  <AIButton
+                    field="benefits"
+                    onClick={generateWithAI}
+                    isGenerating={generatingField === "benefits"}
+                  />
+                </div>
+                <FormControl><Textarea placeholder="List the benefits or click 'Generate with AI'…" className="min-h-[120px]" {...field} /></FormControl>
                 <FormMessage />
               </FormItem>
             )} />
