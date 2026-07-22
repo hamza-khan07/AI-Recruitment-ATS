@@ -25,6 +25,7 @@ import {
 } from "@/lib/candidate-mock-data";
 import { api } from "@/lib/api";
 import type { Job } from "@/types/candidate";
+import { cn } from "@/lib/utils";
 
 const JOB_TYPE_LABELS: Record<string, string> = {
   FULL_TIME: "Full Time",
@@ -87,10 +88,19 @@ export default function JobDetailPage() {
       })
       .catch(console.error)
       .finally(() => setIsLoading(false));
+
+    api.get("/api/v1/candidates/applications")
+      .then(res => {
+        const apps = res.data?.data || [];
+        const applied = apps.some((app: any) => app.jobId === jobId);
+        setHasApplied(applied);
+      })
+      .catch(() => {});
   }, [jobId]);
 
   const [applyOpen, setApplyOpen] = useState(false);
   const [saved, setSaved] = useState(INITIAL_SAVED_JOB_IDS.includes(jobId));
+  const [hasApplied, setHasApplied] = useState(false);
 
   if (isLoading) {
     return <div className="mx-auto max-w-5xl py-20 text-center text-zinc-500">Loading job details...</div>;
@@ -166,9 +176,15 @@ export default function JobDetailPage() {
                   </button>
                   <button
                     onClick={() => setApplyOpen(true)}
-                    className="rounded-xl bg-blue-600 px-6 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-200 transition hover:bg-blue-700 active:scale-[0.98]"
+                    disabled={hasApplied}
+                    className={cn(
+                      "rounded-xl px-6 py-2.5 text-sm font-semibold shadow-sm transition active:scale-[0.98]",
+                      hasApplied 
+                        ? "bg-zinc-100 text-zinc-500 cursor-not-allowed" 
+                        : "bg-blue-600 text-white shadow-blue-200 hover:bg-blue-700"
+                    )}
                   >
-                    Apply Now
+                    {hasApplied ? "Applied" : "Apply Now"}
                   </button>
                 </div>
               </div>

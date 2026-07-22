@@ -25,6 +25,7 @@ import {
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { MatchScoreBadge, type MatchLabel } from "@/components/hr/match-score-badge";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -48,6 +49,7 @@ export interface Application {
   interviewDate?: string | null;
   interviewEndTime?: string | null;
   createdAt: string;
+  matchLabel?: MatchLabel;
   job: { id: string; title: string; department: string | null };
   candidate: {
     id: string;
@@ -203,11 +205,16 @@ function CandidateCard({
               <Calendar className="h-3 w-3" />
               {timeAgo(app.createdAt)}
             </div>
-            {app.resumeUrl && (
-              <span className="rounded-md bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">
-                Resume ✓
-              </span>
-            )}
+            <div className="flex items-center gap-1.5">
+              {app.matchLabel && (
+                <MatchScoreBadge matchLabel={app.matchLabel} size="sm" />
+              )}
+              {app.resumeUrl && !app.matchLabel && (
+                <span className="rounded-md bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-500">
+                  Resume ✓
+                </span>
+              )}
+            </div>
           </div>
         </div>
       )}

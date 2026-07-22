@@ -20,6 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
 import { PageContainer } from "@/components/hr/hr-shell";
+import { AiAnalysisPanel, type MatchLabel } from "@/components/hr/match-score-badge";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -76,6 +77,17 @@ interface ApplicationDetail {
       }[];
     } | null;
   };
+  // AI fields
+  matchLabel: MatchLabel;
+  matchSummary: string | null;
+  missingSkills: string[];
+  parsedResume: {
+    skills?: string[];
+    experienceYears?: number;
+    education?: string;
+    summary?: string;
+  } | null;
+  aiAnalyzedAt: string | null;
 }
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
@@ -119,6 +131,7 @@ export default function ApplicationDetailPage() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+  const [isReanalyzing, setIsReanalyzing] = useState(false);
 
   useEffect(() => {
     api.get(`/api/v1/applications/${id}`)
@@ -139,6 +152,21 @@ export default function ApplicationDetailPage() {
     } finally {
       setUpdating(false);
       setTimeout(() => setToast(null), 3500);
+    }
+  };
+
+  const handleReanalyze = async () => {
+    setIsReanalyzing(true);
+    try {
+      await api.post(`/api/v1/ai/applications/${id}/analyze`);
+      setToast({ type: "success", msg: "Analysis started. Refresh in a few seconds to see the results." });
+      // Clear the current match label so badge shows "Analyzing..."
+      setApp((prev) => prev ? { ...prev, matchLabel: null, aiAnalyzedAt: null } : prev);
+    } catch {
+      setToast({ type: "error", msg: "Failed to start analysis." });
+    } finally {
+      setIsReanalyzing(false);
+      setTimeout(() => setToast(null), 4000);
     }
   };
 
@@ -304,6 +332,18 @@ export default function ApplicationDetailPage() {
 
         {/* ── Right: Sidebar ── */}
         <div className="space-y-5">
+          {/* AI Analysis Panel */}
+          <AiAnalysisPanel
+            matchLabel={app.matchLabel}
+            matchSummary={app.matchSummary}
+            parsedResume={app.parsedResume}
+            missingSkills={app.missingSkills ?? []}
+            aiAnalyzedAt={app.aiAnalyzedAt}
+            hasResume={!!app.resumeUrl}
+            onReanalyze={app.resumeUrl ? handleReanalyze : undefined}
+            isReanalyzing={isReanalyzing}
+          />
+
           {/* Application Status */}
           <div className="rounded-2xl border border-zinc-200 bg-white p-5">
             <h3 className="mb-3 text-sm font-bold text-zinc-900">Application Status</h3>

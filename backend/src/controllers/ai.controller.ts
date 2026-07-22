@@ -211,3 +211,51 @@ export const generateJobContent = async (req: Request, res: Response) => {
     });
   }
 };
+
+// ─── On-demand Re-analyze Application ────────────────────────────────────────
+// HR can trigger this manually if auto-analysis failed on apply.
+// Route: POST /api/v1/ai/applications/:id/analyze
+export const analyzeApplication = async (req: Request, res: Response) => {
+  try {
+    if (!env.groqApiKey) {
+      return res.status(500).json({ success: false, message: "AI service not configured." });
+    }
+
+    const id = req.params.id as string;
+
+    // Lazy import to avoid circular deps at module load time
+    const { applicationRepository } = await import("../repositories/application.repository.js");
+    const resumeText = Array.isArray(req.body.resumeText) ? req.body.resumeText[0] : (req.body.resumeText as string);
+    const { analyzeResume } = await import("../services/resumeParser.service.js");
+
+    const application = await applicationRepository.findById(id);
+    if (!application) {
+      return res.status(404).json({ success: false, message: "Application not found." });
+    }
+
+    const app = application as any;
+    if (!app.resumeUrl) {
+      return res.status(400).json({ success: false, message: "This application has no resume to analyze." });
+    }
+
+    // Respond immediately, analysis runs in background
+    res.status(202).json({ success: true, message: "Analysis started. Refresh in a few seconds to see results." });
+
+    // Fire-and-forget
+    analyzeResume(
+      id,
+      app.resumeUrl,
+      {
+        title: app.job?.title ?? "Unknown",
+        skills: app.job?.skills,
+        requirements: app.job?.requirements,
+        experience: app.job?.experience,
+        description: app.job?.description,
+      },
+      (appId, data) => applicationRepository.saveAiAnalysis(appId, data)
+    );
+  } catch (error: any) {
+    console.error("[AI] Re-analyze error:", error.message);
+    return res.status(500).json({ success: false, message: "Failed to start analysis." });
+  }
+};

@@ -6,6 +6,7 @@ export const applicationRepository = {
   async create(data: {
     jobId: string;
     candidateId: string;
+    companyId: string;
     fullName: string;
     email: string;
     phone?: string | null;
@@ -102,6 +103,9 @@ export const applicationRepository = {
             department: true,
             location: true,
             employmentType: true,
+            skills: true,
+            requirements: true,
+            experience: true,
             company: { select: { id: true, name: true, logo: true } },
           },
         },
@@ -119,6 +123,21 @@ export const applicationRepository = {
     });
   },
 
+  // ─── AI Analysis ─────────────────────────────────────────────────────────
+  async saveAiAnalysis(id: string, data: {
+    resumeText: string;
+    parsedResume: object;
+    matchLabel: string;
+    matchSummary: string;
+    missingSkills: string[];
+    aiAnalyzedAt: Date;
+  }) {
+    return anyPrisma.application.update({
+      where: { id },
+      data,
+    });
+  },
+
   async updateStatus(id: string, status: string) {
     return anyPrisma.application.update({
       where: { id },
@@ -132,4 +151,10 @@ export const applicationRepository = {
       data,
     });
   },
+
+  async delete(id: string) {
+    return anyPrisma.application.delete({
+      where: { id }
+    });
+  }
 };

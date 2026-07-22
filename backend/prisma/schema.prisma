@@ -76,6 +76,7 @@ model Company {
   owner         User              @relation("CompanyOwner", fields: [ownerId], references: [id])
   users         User[]
   jobs          Job[]
+  applications  Application[]
   careerPageUrl String?
   websiteUrl    String?
   logo          String?
@@ -167,6 +168,8 @@ model Application {
   job          Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
   candidateId  String
   candidate    User              @relation("CandidateApplications", fields: [candidateId], references: [id])
+  companyId    String?
+  company      Company?          @relation(fields: [companyId], references: [id])
   fullName     String
   email        String
   phone        String?
@@ -179,6 +182,14 @@ model Application {
   interviewEndTime DateTime?
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
+
+  // ─── AI Analysis Fields ───────────────────────────────────────────────────
+  resumeText    String?    // Raw text extracted from the PDF resume
+  parsedResume  Json?      // Structured JSON: { skills, experienceYears, education, summary }
+  matchLabel    String?    // "STRONG_MATCH" | "GOOD_MATCH" | "WEAK_MATCH" | "PARSE_FAILED"
+  matchSummary  String?    // 2-3 line AI-generated candidate strength summary
+  missingSkills String[]   // Skills required by job but absent from resume
+  aiAnalyzedAt  DateTime?  // Timestamp of when AI analysis was completed
 
   @@unique([jobId, candidateId])
 }

@@ -28,5 +28,10 @@ applicationRouter.patch(
   authMiddleware.authorize(["HR", "SUPER_ADMIN"]),
   asyncHandler(applicationController.updateDetails)
 );
+applicationRouter.delete(
+  "/:id",
+  authMiddleware.authorize(["HR", "SUPER_ADMIN"]),
+  asyncHandler(applicationController.deleteApplication)
+);
 
 export { applicationRouter };

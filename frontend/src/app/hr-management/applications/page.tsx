@@ -18,7 +18,8 @@ import {
   TrendingUp,
   AlertCircle,
   CalendarHeart,
-  MoreHorizontal
+  MoreHorizontal,
+  Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
@@ -26,6 +27,7 @@ import { PageContainer } from "@/components/hr/hr-shell";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { MatchScoreBadge, type MatchLabel } from "@/components/hr/match-score-badge";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -39,6 +41,7 @@ interface Application {
   resumeUrl: string | null;
   status: ApplicationStatus;
   createdAt: string;
+  matchLabel: MatchLabel;
   job: { id: string; title: string; department: string | null };
   candidate: {
     id: string;
@@ -148,6 +151,17 @@ export default function ApplicationsPage() {
     } catch {}
   };
 
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this application?")) return;
+    try {
+      await api.delete(`/api/v1/applications/${id}`);
+      fetchApplications();
+    } catch (error: any) {
+      console.error("Failed to delete application", error);
+      alert("Failed to delete application: " + (error.response?.data?.message || error.message));
+    }
+  };
+
   // Compute stats from current full data
   const stats = {
     total:       data?.total ?? 0,
@@ -216,6 +230,9 @@ export default function ApplicationsPage() {
                 </th>
                 <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
                   Resume
+                </th>
+                <th className="px-3 py-3 text-left text-xs font-semibold uppercase tracking-wider text-zinc-500">
+                  AI Match
                 </th>
                 <th className="px-3 py-3 text-right text-xs font-semibold uppercase tracking-wider text-zinc-500">
                   Actions
@@ -308,6 +325,10 @@ export default function ApplicationsPage() {
                         <span className="text-xs text-zinc-300">—</span>
                       )}
                     </td>
+                    {/* AI Match */}
+                    <td className="px-3 py-3">
+                      <MatchScoreBadge matchLabel={app.matchLabel} size="sm" />
+                    </td>
                     {/* Actions */}
                     <td className="px-3 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                       <DropdownMenu>
@@ -325,6 +346,10 @@ export default function ApplicationsPage() {
                             </Link>
                           </DropdownMenuItem>
                           
+                          <DropdownMenuItem onClick={() => handleDelete(app.id)} className="flex items-center gap-2 cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50">
+                            <Trash2 className="h-4 w-4" /> Delete Application
+                          </DropdownMenuItem>
+
                           {nextStatuses.length > 0 && (
                             <>
                               <DropdownMenuSeparator />

@@ -80,16 +80,31 @@ export function ApplyModal({ job, onClose }: ApplyModalProps) {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!form.fullName || !form.email) return;
+    if (!form.fullName || !form.email || !form.phone || (!resumeFile && !existingResumeUrl)) {
+      setSubmitError("Please fill out all required fields and attach a resume.");
+      return;
+    }
     setSubmitError(null);
     setIsSubmitting(true);
     try {
+      let finalResumeUrl = existingResumeUrl;
+
+      // Upload new resume if selected
+      if (resumeFile) {
+        const formData = new FormData();
+        formData.append("file", resumeFile);
+        const uploadRes = await api.post("/api/v1/upload", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+        finalResumeUrl = uploadRes.data?.data?.url;
+      }
+
       const jobId = job.id;
       await api.post(`/api/v1/candidates/jobs/${jobId}/apply`, {
         fullName: form.fullName,
         email: form.email,
-        phone: form.phone || null,
-        resumeUrl: existingResumeUrl || null,
+        phone: form.phone,
+        resumeUrl: finalResumeUrl,
         coverLetter: form.coverLetter || null,
       });
       setStep("success");
@@ -175,12 +190,13 @@ export function ApplyModal({ job, onClose }: ApplyModalProps) {
                 {/* Phone */}
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                    Phone Number
+                    Phone Number <span className="text-red-500">*</span>
                   </label>
                   <input
                     name="phone"
                     value={form.phone}
                     onChange={handleChange}
+                    required
                     placeholder="+92 300 0000000"
                     className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
                   />
@@ -189,7 +205,7 @@ export function ApplyModal({ job, onClose }: ApplyModalProps) {
                 {/* Resume Upload */}
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                    Resume / CV
+                    Resume / CV <span className="text-red-500">*</span>
                   </label>
                   <div
                     onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
@@ -240,16 +256,16 @@ export function ApplyModal({ job, onClose }: ApplyModalProps) {
                 {/* Cover Letter */}
                 <div>
                   <label className="mb-1.5 block text-sm font-medium text-zinc-700">
-                    Cover Letter{" "}
-                    <span className="text-zinc-400 font-normal">(optional)</span>
+                    Cover Letter <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     name="coverLetter"
                     value={form.coverLetter}
                     onChange={handleChange}
+                    required
                     rows={4}
-                    placeholder="Tell us why you're a great fit for this role..."
-                    className="w-full rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100 resize-none"
+                    placeholder="Tell us why you are a great fit for this role..."
+                    className="w-full resize-none rounded-xl border border-zinc-200 bg-zinc-50 px-3.5 py-2.5 text-sm text-zinc-900 outline-none transition focus:border-blue-400 focus:bg-white focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
               </div>

@@ -157,4 +157,21 @@ export const applicationController = {
       next(error);
     }
   },
+
+  deleteApplication: async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const currentUserId = (req as any).user?.id;
+      const user = await authRepository.findUserById(currentUserId);
+      const companyId = (user as any)?.companyId;
+      if (!companyId) return res.status(403).json({ success: false, message: "No company associated with your account." });
+
+      const applicationId = req.params.id as string;
+      await applicationService.deleteApplication(applicationId, companyId);
+      return res.status(200).json({ success: true, message: "Application deleted successfully" });
+    } catch (error: any) {
+      if (error.statusCode === 404) return res.status(404).json({ success: false, message: error.message });
+      if (error.statusCode === 403) return res.status(403).json({ success: false, message: error.message });
+      next(error);
+    }
+  }
 };
